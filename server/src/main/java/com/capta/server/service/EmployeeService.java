@@ -1,5 +1,6 @@
 package com.capta.server.service;
 
+import com.capta.server.dto.DashboardStats;
 import com.capta.server.model.Employee;
 
 import java.util.List;
@@ -11,4 +12,6 @@ public interface EmployeeService {
     List<Employee> getAllEmployees();
     Employee updateEmployee(int id, Employee employee);
     void deleteEmployee(int id);
+
+    DashboardStats getSalonStats();
 }

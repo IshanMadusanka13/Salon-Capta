@@ -28,12 +28,29 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
-    public Appointment createAppointment(CreateAppointmentDTO appointment) {
+    public String createAppointment(CreateAppointmentDTO appointment) {
         log.info("Creating new appointment for user ID: {}", appointment.getUserId());
 
         Appointment createdAppointment = appointmentRepository.save(appointment.DtoToEntity());
         log.info("Successfully created appointment with ID: {}", createdAppointment.getAppointmentId());
-        return null;
+
+        return String.valueOf(createdAppointment.getAppointmentId());
+    }
+
+    @Override
+    public List<Appointment> getAllAppointments() {
+        log.info("Getting All Appointments");
+        List<Appointment> appointments = appointmentRepository.findAll();
+        log.info("Successfully got All Appointments");
+        return appointments;
+    }
+
+    @Override
+    public List<Appointment> getRecentAppointments() {
+        log.info("Getting Recent Appointments");
+        List<Appointment> appointments = appointmentRepository.findTop10ByOrderByTimeSlotDesc();
+        log.info("Successfully got Recent Appointments");
+        return appointments;
     }
 
     @Override

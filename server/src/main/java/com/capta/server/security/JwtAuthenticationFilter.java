@@ -9,7 +9,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import java.io.BufferedReader;
 import java.io.IOException;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -28,6 +27,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         logger.info("Request Came from" + request.getServletPath());
 
         String header = request.getHeader("Authorization");
+
+        logger.info("header " + header);
+
 
         if (header == null || !header.startsWith("Bearer ")) {
             chain.doFilter(request, response);

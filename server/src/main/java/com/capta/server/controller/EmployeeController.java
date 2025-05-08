@@ -1,5 +1,6 @@
 package com.capta.server.controller;
 
+import com.capta.server.dto.DashboardStats;
 import com.capta.server.model.Employee;
 import com.capta.server.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,5 +46,10 @@ public class EmployeeController {
     public ResponseEntity<Void> delete(@PathVariable int id) {
         employeeService.deleteEmployee(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<DashboardStats> getStats() {
+        return ResponseEntity.ok(employeeService.getSalonStats());
     }
 }

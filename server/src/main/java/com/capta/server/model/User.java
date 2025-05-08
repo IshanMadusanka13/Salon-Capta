@@ -20,7 +20,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name="user_type")
-    private UserType userType;
+    private UserType userType = UserType.CUSTOMER;
 
     private String password;
 

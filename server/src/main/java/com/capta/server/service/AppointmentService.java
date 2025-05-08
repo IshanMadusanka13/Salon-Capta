@@ -3,13 +3,16 @@ package com.capta.server.service;
 import com.capta.server.dto.CreateAppointmentDTO;
 import com.capta.server.model.Appointment;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface AppointmentService {
-    Appointment createAppointment(CreateAppointmentDTO appointment);
+    String createAppointment(CreateAppointmentDTO appointment);
+
+    List<Appointment> getAllAppointments();
+
+    List<Appointment> getRecentAppointments();
 
     Optional<Appointment> getAppointmentById(int id);
 

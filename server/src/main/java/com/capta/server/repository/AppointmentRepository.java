@@ -14,5 +14,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Intege
     List<Appointment> findByTimeSlot(LocalDateTime start);
 
     List<Appointment> findByEmployee_EmployeeIdAndTimeSlotBetween(int employeeId, LocalDateTime start, LocalDateTime end);
+
+    List<Appointment> findByTimeSlotBetween(LocalDateTime start, LocalDateTime end);
+
+    List<Appointment> findTop10ByOrderByTimeSlotDesc();
 }
 

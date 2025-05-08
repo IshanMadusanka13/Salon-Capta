@@ -73,15 +73,29 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex items-center space-x-4">
-          <a
-            href="/booking"
-            className={`px-4 py-2 rounded-lg transition-all duration-300 transform hover:-translate-y-0.5 ${isScrolled || !isHomePage
-              ? 'bg-indigo-800 text-white hover:bg-blue-900'
-              : 'bg-white text-indigo-800 hover:bg-gray-100 dark:bg-indigo-600 dark:text-white dark:hover:bg-indigo-700'
-              }`}
-          >
-            Booking
-          </a>
+
+          {user?.userType == "SALON_OWNER" ? (
+            <a
+              href="/dashboard"
+              className={`px-4 py-2 rounded-lg transition-all duration-300 transform hover:-translate-y-0.5 ${isScrolled || !isHomePage
+                ? 'bg-indigo-800 text-white hover:bg-blue-900'
+                : 'bg-white text-indigo-800 hover:bg-gray-100 dark:bg-indigo-600 dark:text-white dark:hover:bg-indigo-700'
+                }`}
+            >
+              Dashboard
+            </a>
+          ) : (
+            <a
+              href="/booking"
+              className={`px-4 py-2 rounded-lg transition-all duration-300 transform hover:-translate-y-0.5 ${isScrolled || !isHomePage
+                ? 'bg-indigo-800 text-white hover:bg-blue-900'
+                : 'bg-white text-indigo-800 hover:bg-gray-100 dark:bg-indigo-600 dark:text-white dark:hover:bg-indigo-700'
+                }`}
+            >
+              Booking
+            </a>
+          )}
+
           {token ? (
             <button
               onClick={handleLogout}
@@ -153,15 +167,28 @@ const Navbar = () => {
               {item}
             </a>
           ))}
-          <a
-            href="/booking"
-            className={`inline-block px-4 py-2 rounded-lg transition-colors duration-300 mt-2 ${isScrolled || !isHomePage
-              ? 'bg-indigo-800 text-white hover:bg-blue-900'
-              : 'bg-indigo-800 text-white hover:bg-blue-900'
-              }`}
-          >
-            Booking
-          </a>
+          {user?.userType == "SALON_OWNER" ? (
+            <a
+              href="/dashboard"
+              className={`inline-block px-4 py-2 rounded-lg transition-colors duration-300 mt-2 ${isScrolled || !isHomePage
+                ? 'bg-indigo-800 text-white hover:bg-blue-900'
+                : 'bg-indigo-800 text-white hover:bg-blue-900'
+                }`}
+            >
+              Dashboard
+            </a>
+          ) : (
+            <a
+              href="/booking"
+              className={`inline-block px-4 py-2 rounded-lg transition-colors duration-300 mt-2 ${isScrolled || !isHomePage
+                ? 'bg-indigo-800 text-white hover:bg-blue-900'
+                : 'bg-indigo-800 text-white hover:bg-blue-900'
+                }`}
+            >
+              Booking
+            </a>
+          )}
+
           {token ? (
             <button
               onClick={handleLogout}

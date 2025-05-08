@@ -2,9 +2,14 @@ package com.capta.server.controller;
 
 import com.capta.server.model.Payment;
 import com.capta.server.service.PaymentService;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -17,10 +22,14 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
-    @PostMapping
-    public ResponseEntity<Payment> create(@RequestBody Payment payment) {
-        return ResponseEntity.ok(paymentService.createPayment(payment));
+    @GetMapping("/stripe/{appointmentId}/{service}/{amount}")
+    public ResponseEntity<Map<String, String>> getStripePaymentUrl(@PathVariable String service, @PathVariable Long amount, @PathVariable int appointmentId) {
+        String url = paymentService.getStripePaymentUrl(service, amount, appointmentId);
+        Map<String, String> response = new HashMap<>();
+        response.put("url", url);
+        return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<Payment> get(@PathVariable int id) {
@@ -40,4 +49,21 @@ public class PaymentController {
     public ResponseEntity<Payment> update(@PathVariable int id, @RequestBody Payment payment) {
         return ResponseEntity.ok(paymentService.updatePayment(id, payment));
     }
+
+    @GetMapping("/success")
+    public void handlePaymentSuccess(@RequestParam("session_id") String sessionId, HttpServletResponse response) {
+        try {
+            paymentService.createPayment(sessionId);
+
+            response.sendRedirect("http://localhost:3000");
+        } catch (Exception e) {
+            try {
+                response.sendRedirect("http://localhost:3000/error");
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
+        }
+    }
+
+
 }

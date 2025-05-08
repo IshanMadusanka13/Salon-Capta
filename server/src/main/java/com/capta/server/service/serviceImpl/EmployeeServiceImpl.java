@@ -1,12 +1,19 @@
 package com.capta.server.service.serviceImpl;
 
+import com.capta.server.dto.DashboardStats;
+import com.capta.server.model.Appointment;
 import com.capta.server.model.Employee;
+import com.capta.server.repository.AppointmentRepository;
 import com.capta.server.repository.EmployeeRepository;
+import com.capta.server.repository.UserRepository;
 import com.capta.server.service.EmployeeService;
+import com.capta.server.utils.enums.UserType;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -16,10 +23,14 @@ import java.util.stream.Collectors;
 public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository) {
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, AppointmentRepository appointmentRepository, UserRepository userRepository) {
         this.employeeRepository = employeeRepository;
+        this.appointmentRepository = appointmentRepository;
+        this.userRepository = userRepository;
         log.info("EmployeeService initialized with EmployeeRepository");
     }
 
@@ -27,7 +38,8 @@ public class EmployeeServiceImpl implements EmployeeService {
     public Employee createEmployee(Employee employee) {
         log.info("Creating new employee with email: {}", employee.getEmail());
         log.debug("Employee details - Name: {}, Phone: {}", employee.getName(), employee.getPhone());
-
+        employee.setJoinDate(LocalDate.now());
+        log.info(employee);
         Employee createdEmployee = employeeRepository.save(employee);
         log.info("Successfully created employee with ID: {}", createdEmployee.getEmployeeId());
         return createdEmployee;
@@ -92,5 +104,35 @@ public class EmployeeServiceImpl implements EmployeeService {
         } else {
             log.warn("Delete failed - no employee found with ID: {}", id);
         }
+    }
+
+    @Override
+    public DashboardStats getSalonStats() {
+        log.info("Fetching Salon Stats");
+
+        List<Appointment> appointmentsToday = appointmentRepository.findByTimeSlotBetween(LocalDate.now().atStartOfDay(), LocalDate.now().atTime(LocalTime.MAX));
+        List<Appointment> appointmentsMonthly = appointmentRepository.findByTimeSlotBetween(
+            LocalDate.now().withDayOfMonth(1).atStartOfDay(), 
+            LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth()).atTime(LocalTime.MAX)
+        );
+
+
+        int customers = userRepository.findByUserType(UserType.CUSTOMER).size();
+        int todayAppointments = appointmentsToday.size();
+
+        double todayRevenue = 0;
+        double monthlyRevenue = 0;
+
+        for (Appointment appointment :
+                appointmentsToday) {
+            todayRevenue += appointment.getService().getPrice();
+        }
+
+        for (Appointment appointment :
+                appointmentsMonthly) {
+            monthlyRevenue += appointment.getService().getPrice();
+        }
+
+        return new DashboardStats(todayAppointments, customers, todayRevenue, monthlyRevenue);
     }
 }

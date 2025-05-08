@@ -1,12 +1,19 @@
 package com.capta.server.service.serviceImpl;
 
+import com.capta.server.model.Appointment;
 import com.capta.server.model.Payment;
 import com.capta.server.repository.PaymentRepository;
 import com.capta.server.service.PaymentService;
+import com.capta.server.utils.SendNotification;
+import com.capta.server.utils.enums.PaymentType;
+import com.stripe.Stripe;
+import com.stripe.model.checkout.Session;
+import com.stripe.param.checkout.SessionCreateParams;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -22,12 +29,51 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    public Payment createPayment(Payment payment) {
-        log.info("Creating new payment for appointment ID: {}", payment.getAppointment().getAppointmentId());
-        Payment createdPayment = paymentRepository.save(payment);
-        log.info("Successfully created payment with ID: {} for amount: {}",
-                createdPayment.getPaymentId(), createdPayment.getAmount());
-        return createdPayment;
+    public void createPayment(String sessionId) {
+        log.info("Creating new payment");
+
+        try {
+            Session session = Session.retrieve(sessionId);
+            String email = "mirangabandara8@gmail.com";// session.getCustomerDetails().getEmail();
+            Long amount = session.getAmountTotal();
+            String paymentIntent = session.getPaymentIntent();
+            String appointmentId = session.getMetadata().get("appointmentId");
+            String serviceName = session.getMetadata().get("serviceName");
+            String smsMessage = "";
+
+            Appointment appointment = new Appointment();
+            appointment.setAppointmentId(Integer.parseInt(appointmentId));
+
+            Payment payment = new Payment();
+            payment.setAppointment(appointment);
+            payment.setAmount((amount.doubleValue()) / 100);
+            payment.setStripePaymentId(paymentIntent);
+            payment.setTransactionDate(LocalDateTime.now());
+            if (serviceName.equals("Tip")) {
+                payment.setPaymentType(PaymentType.TIP);
+                smsMessage = String.format(
+                        "Thank You for the tip for Appointment with ID: %s. Amount paid: LKR %.2f",
+                        appointmentId, (amount.doubleValue()) / 100);
+
+            } else {
+                payment.setPaymentType(PaymentType.PAYMENT);
+                smsMessage = String.format(
+                        "Successfully Booked an Appointment with ID: %s for %s service. Amount paid: LKR %.2f",
+                        appointmentId, serviceName, (amount.doubleValue()) / 100);
+
+            }
+            Payment createdPayment = paymentRepository.save(payment);
+
+            SendNotification.sendSMS(smsMessage);
+            SendNotification.sendMail(email, "Booking Confirmed", smsMessage);
+
+            log.info("Successfully created payment with ID: {} for amount: {}",
+                    createdPayment.getPaymentId(), createdPayment.getAmount());
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error(e);
+        }
     }
 
     @Override
@@ -71,4 +117,41 @@ public class PaymentServiceImpl implements PaymentService {
             return new RuntimeException("Payment not found");
         });
     }
+
+    @Override
+    public String getStripePaymentUrl(String service, Long amount, int appointmentId) {
+        log.info("Creating new payment for appointment ID");
+
+        Stripe.apiKey = "sk_test_51RH39tQOKgNvdt7i19OzAaWaMqCeNlZRcKg5r4EzVIO6MV9HgpgXCpF35qN9wa1az4kUlOgF5vmukqxJDrm9xEJi00ztV7rjhA";
+
+        try {
+            SessionCreateParams params = SessionCreateParams.builder()
+                    .addLineItem(
+                            SessionCreateParams.LineItem.builder()
+                                    .setPriceData(
+                                            SessionCreateParams.LineItem.PriceData.builder()
+                                                    .setCurrency("lkr")
+                                                    .setProductData(
+                                                            SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                                                    .setName(service)
+                                                                    .build())
+                                                    .setUnitAmount(amount * 100)
+                                                    .build())
+                                    .setQuantity(1L)
+                                    .build())
+                    .setMode(SessionCreateParams.Mode.PAYMENT)
+                    .setSuccessUrl("http://localhost:8080/api/payments/success?session_id={CHECKOUT_SESSION_ID}")
+                    .setCancelUrl("http://localhost:3000/cancel.html")
+                    .putMetadata("appointmentId", String.valueOf(appointmentId))
+                    .putMetadata("serviceName", service)
+                    .build();
+            Session session = Session.create(params);
+            return session.getUrl();
+        } catch (Exception e) {
+            log.warn("Stripe URL generation failed : {}", e.getMessage());
+            return null;
+        }
+
+    }
+
 }

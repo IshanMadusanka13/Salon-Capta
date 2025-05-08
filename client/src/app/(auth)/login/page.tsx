@@ -29,9 +29,13 @@ export default function LoginPage() {
 
       if (token) {
         console.log('User logged in:', user);
-        dispatch(setUser(user.userId));
+        dispatch(setUser(user));
         dispatch(setToken(token));
-        router.push('/');
+        if (user.userType == "SALON_OWNER") {
+          router.push('/dashboard');
+        } else {
+          router.push('/');
+        }
       } else {
         setError(error || 'Login failed. Please try again.');
       }

@@ -7,7 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -21,8 +23,11 @@ public class AppointmentController {
     }
 
     @PostMapping
-    public ResponseEntity<Appointment> create(@RequestBody CreateAppointmentDTO appointment) {
-        return ResponseEntity.ok(appointmentService.createAppointment(appointment));
+    public ResponseEntity<Map<String, String>> create(@RequestBody CreateAppointmentDTO appointment) {
+        String appointmentId = appointmentService.createAppointment(appointment);
+        Map<String, String> response = new HashMap<>();
+        response.put("appointment", appointmentId);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
@@ -35,6 +40,16 @@ public class AppointmentController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Appointment>> getByUser(@PathVariable int userId) {
         return ResponseEntity.ok(appointmentService.getAppointmentsByUser(userId));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Appointment>> getAllAppointments() {
+        return ResponseEntity.ok(appointmentService.getAllAppointments());
+    }
+
+    @GetMapping("/recent")
+    public ResponseEntity<List<Appointment>> getRecentAppointments() {
+        return ResponseEntity.ok(appointmentService.getRecentAppointments());
     }
 
     @GetMapping("/slots/{userId}/{date}")
