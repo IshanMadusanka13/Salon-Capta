@@ -25,4 +25,6 @@ public interface AppointmentService {
     void cancelAppointment(int id);
 
     List<Appointment> loadAvailableSlots(int employeeId, String date);
+
+    Appointment updateAppointmentStatus(int id, String status);
 }

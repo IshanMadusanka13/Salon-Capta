@@ -3,8 +3,10 @@ package com.capta.server.service.serviceImpl;
 import com.capta.server.model.Appointment;
 import com.capta.server.model.Payment;
 import com.capta.server.repository.PaymentRepository;
+import com.capta.server.service.AppointmentService;
 import com.capta.server.service.PaymentService;
 import com.capta.server.utils.SendNotification;
+import com.capta.server.utils.enums.AppointmentStatus;
 import com.capta.server.utils.enums.PaymentType;
 import com.stripe.Stripe;
 import com.stripe.model.checkout.Session;
@@ -21,10 +23,12 @@ import java.util.Optional;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final AppointmentService appointmentService;
 
     @Autowired
-    public PaymentServiceImpl(PaymentRepository paymentRepository) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository, AppointmentService appointmentService) {
         this.paymentRepository = paymentRepository;
+        this.appointmentService = appointmentService;
         log.info("PaymentServiceImpl initialized with PaymentRepository");
     }
 
@@ -54,6 +58,7 @@ public class PaymentServiceImpl implements PaymentService {
                 smsMessage = String.format(
                         "Thank You for the tip for Appointment with ID: %s. Amount paid: LKR %.2f",
                         appointmentId, (amount.doubleValue()) / 100);
+                appointmentService.updateAppointmentStatus(Integer.parseInt(appointmentId), AppointmentStatus.TIPPED.toString());
 
             } else {
                 payment.setPaymentType(PaymentType.PAYMENT);

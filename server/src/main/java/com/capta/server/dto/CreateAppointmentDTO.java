@@ -4,6 +4,7 @@ import com.capta.server.model.Appointment;
 import com.capta.server.model.Employee;
 import com.capta.server.model.Services;
 import com.capta.server.model.User;
+import com.capta.server.utils.enums.AppointmentStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ public class CreateAppointmentDTO {
         appointment.setService(service);
         appointment.setNotes(notes);
         appointment.setTimeSlot(timeSlot);
+        appointment.setStatus(AppointmentStatus.UPCOMING);
 
         return appointment;
     }

@@ -15,9 +15,17 @@ public class Employee {
 
     private String name;
 
-    private String email;
+    private LocalDate dob;
+
+    private String gender;
+
+    private String address;
 
     private String phone;
+
+    private String nic;
+
+    private String email;
 
     private LocalDate joinDate;
 }

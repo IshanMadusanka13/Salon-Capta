@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,9 +58,20 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.loadAvailableSlots(userId, date));
     }
 
+    @GetMapping("/range/{start}/{end}")
+    public ResponseEntity<List<Appointment>> getAppointmentsByDateRange(@PathVariable LocalDateTime start,
+            @PathVariable LocalDateTime end) {
+        return ResponseEntity.ok(appointmentService.getAppointmentsByDateRange(start, end));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<Appointment> update(@PathVariable int id, @RequestBody Appointment updated) {
         return ResponseEntity.ok(appointmentService.updateAppointment(id, updated));
+    }
+
+    @PutMapping("/status/{id}")
+    public ResponseEntity<Appointment> updateStatus(@PathVariable int id, @RequestBody String status) {
+        return ResponseEntity.ok(appointmentService.updateAppointmentStatus(id, status));
     }
 
     @DeleteMapping("/{id}")

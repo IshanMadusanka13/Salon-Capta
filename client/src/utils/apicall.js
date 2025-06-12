@@ -6,8 +6,6 @@ const fetchApi = async (endpoint, token, options = {}) => {
         ...options.headers,
     };
 
-    console.log(token);
-
     if (token) {
         headers.Authorization = `Bearer ${token}`;
     }
@@ -80,6 +78,17 @@ export const api = {
             body: JSON.stringify(employeeData)
         }),
 
+    updateEmployee: (employeeData, token) =>
+        fetchApi('/employee/' + employeeData.employeeId, token, {
+            method: 'PUT',
+            body: JSON.stringify(employeeData)
+        }),
+
+    deleteEmployee: (employeeId, token) =>
+        fetchApi('/employee/' + employeeId, token, {
+            method: 'DELETE',
+        }),
+
     getTimeSlots: (token, id, date) =>
         fetchApi('/appointments/slots/' + id + "/" + date, token, {
             method: 'GET'
@@ -111,6 +120,23 @@ export const api = {
             method: 'GET'
         }),
 
+    createService: (service, token) =>
+        fetchApi('/services', token, {
+            method: 'POST',
+            body: JSON.stringify(service)
+        }),
+
+    updateService: (token, id, service) =>
+        fetchApi('/services/' + id, token, {
+            method: 'PUT',
+            body: JSON.stringify(service)
+        }),
+
+    deleteService: (serviceId, token) =>
+        fetchApi('/services/' + serviceId, token, {
+            method: 'DELETE',
+        }),
+
     getAllAppointments: (token) =>
         fetchApi('/appointments', token, {
             method: 'GET'
@@ -126,10 +152,43 @@ export const api = {
             method: 'GET'
         }),
 
+    getAppointmentsByRange: (token, start, end) =>
+        fetchApi(`/appointments/range/${start}/${end}`, token, {
+            method: 'GET'
+        }),
+
     updateAppointments: (status, token, appointmentId) =>
         fetchApi('/' + appointmentId, token, {
             method: 'PUT',
             body: JSON.stringify(status)
+        }),
+
+    rescheduleAppointment: (appointment, token, appointmentId) =>
+        fetchApi('/appointments/' + appointmentId, token, {
+            method: 'PUT',
+            body: JSON.stringify(appointment)
+        }),
+
+    cancelAppointment: (status, token, appointmentId) =>
+        fetchApi('/appointments/status/' + appointmentId, token, {
+            method: 'PUT',
+            body: JSON.stringify(status)
+        }),
+
+    markAttendance: (attendanceData, token) =>
+        fetchApi('/attendance', token, {
+            method: 'POST',
+            body: JSON.stringify(attendanceData)
+        }),
+
+    getAttendances: (token) =>
+        fetchApi('/attendance', token, {
+            method: 'GET',
+        }),
+
+    getAttendancesFiltered: (user,startDate, endDate, token) =>
+        fetchApi(`/attendance/filter/${user}/${startDate}/${endDate}`, token, {
+            method: 'GET',
         }),
 
 };

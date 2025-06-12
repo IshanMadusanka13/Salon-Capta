@@ -1,5 +1,6 @@
 package com.capta.server.model;
 
+import com.capta.server.utils.enums.AppointmentStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -28,4 +29,8 @@ public class Appointment {
     private LocalDateTime timeSlot;
 
     private String notes;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="status")
+    private AppointmentStatus status;
 }

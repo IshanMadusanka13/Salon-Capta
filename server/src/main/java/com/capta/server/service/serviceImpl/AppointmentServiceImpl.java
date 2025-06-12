@@ -4,6 +4,7 @@ import com.capta.server.dto.CreateAppointmentDTO;
 import com.capta.server.model.Appointment;
 import com.capta.server.repository.AppointmentRepository;
 import com.capta.server.service.AppointmentService;
+import com.capta.server.utils.enums.AppointmentStatus;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,9 +48,18 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<Appointment> getRecentAppointments() {
-        log.info("Getting Recent Appointments");
-        List<Appointment> appointments = appointmentRepository.findTop10ByOrderByTimeSlotDesc();
-        log.info("Successfully got Recent Appointments");
+        log.info("Getting appointments from today to 5 days ahead");
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime fiveDaysLater = now.plusDays(5);
+
+        log.info(now);
+        log.info(fiveDaysLater);
+
+        List<Appointment> appointments = appointmentRepository
+                .findByTimeSlotBetween(now, fiveDaysLater);
+
+        log.info("Found {} upcoming appointments", appointments.size());
         return appointments;
     }
 
@@ -85,7 +95,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public List<Appointment> getAppointmentsByDateRange(LocalDateTime start, LocalDateTime end) {
         log.info("Fetching appointments between {} and {}", start, end);
-        List<Appointment> appointments = appointmentRepository.findByTimeSlot(start);
+        List<Appointment> appointments = appointmentRepository.findByTimeSlotBetween(start, end);
 
         log.info("Found {} appointments in date range", appointments.size());
         if (!appointments.isEmpty()) {
@@ -132,6 +142,24 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public List<Appointment> loadAvailableSlots(int employeeId, String date) {
         log.info("Loading Available Slots");
-        return appointmentRepository.findByEmployee_EmployeeIdAndTimeSlotBetween(employeeId, LocalDate.parse(date).atStartOfDay(), LocalDate.parse(date).atTime(LocalTime.MAX));
+        return appointmentRepository.findByEmployee_EmployeeIdAndTimeSlotBetween(employeeId,
+                LocalDate.parse(date).atStartOfDay(), LocalDate.parse(date).atTime(LocalTime.MAX));
     }
+
+    @Override
+    public Appointment updateAppointmentStatus(int id, String status) {
+        log.info("Updating appointment Status with ID: {}", id);
+        String cleanStatus = status.replace("\"", "");
+
+        return appointmentRepository.findById(id).map(app -> {
+            app.setStatus(AppointmentStatus.valueOf(cleanStatus));
+            Appointment savedAppointment = appointmentRepository.save(app);
+            log.info("Successfully updated appointment status with ID: {}", id);
+            return savedAppointment;
+        }).orElseThrow(() -> {
+            log.error("Failed to update - appointment not found with ID: {}", id);
+            return new RuntimeException("Appointment not found");
+        });
+    }
+
 }
