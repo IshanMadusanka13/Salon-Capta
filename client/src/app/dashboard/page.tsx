@@ -13,11 +13,13 @@ import EmployeesTab from '@/components/dashboardTabs/EmployeesTab';
 import OverviewTab from '@/components/dashboardTabs/OverviewTab';
 import ServicesTab from '@/components/dashboardTabs/ServicesTab';
 import { endOfDay, format } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { act, useEffect, useState } from 'react';
 import 'react-datepicker/dist/react-datepicker.css';
 import { useSelector } from 'react-redux';
 import { api } from '../../utils/apicall';
 import SalaryReportTab from '@/components/dashboardTabs/SalaryReportTab';
+import ProductsTab from '@/components/dashboardTabs/ProductTab';
+import ProductFormModal from '@/components/dashboardComponents/ProductFormModal';
 
 interface Appointment {
     appointmentId: string;
@@ -62,6 +64,17 @@ interface Attendance {
     departure?: string;
 }
 
+interface Product {
+    productId: string;
+    productType: string;
+    name: string;
+    description: string;
+    brand: string;
+    price: number;
+    stockQuantity: number;
+    active: boolean;
+}
+
 export default function DashboardPage() {
     const [activeTab, setActiveTab] = useState('overview');
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -87,10 +100,12 @@ export default function DashboardPage() {
     const [showEditModal, setShowEditModal] = useState(false);
     const [showEmployeeDeleteConfirm, setShowEmployeeDeleteConfirm] = useState(false);
     const [showServiceDeleteConfirm, setShowServiceDeleteConfirm] = useState(false);
+    const [showProductDeleteConfirm, setShowProductDeleteConfirm] = useState(false);
     const [showAttendanceForm, setShowAttendanceForm] = useState(false);
     const [services, setServices] = useState([]);
     const [showNewServiceForm, setShowNewServiceForm] = useState(false);
     const [showEditServiceForm, setShowEditServiceForm] = useState(false);
+    const [showEditProductForm, setShowEditProductForm] = useState(false);
     const [editServiceData, setEditServiceData] = useState<any>(null);
     const [newEmployee, setNewEmployee] = useState({
         name: '',
@@ -111,6 +126,17 @@ export default function DashboardPage() {
         description: '',
         price: 0
     });
+    const [currentProduct, setCurrentProduct] = useState({
+        productId: 0,
+        productType: '',
+        name: '',
+        description: '',
+        brand: '',
+        price: 0,
+        stockQuantity: 0,
+        active: true
+    });
+
     const [attendances, setAttendances] = useState<Attendance[]>([]);
     const [attendanceFilters, setAttendanceFilters] = useState({
         selectedEmployee: '',
@@ -126,6 +152,10 @@ export default function DashboardPage() {
     });
     const [attendanceDateRange, setAttendanceDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [attendanceStartDate, attendanceEndDate] = attendanceDateRange;
+    const [products, setProducts] = useState<Product[]>([]);
+    const [showNewProductForm, setShowNewProductForm] = useState(false);
+    const [editProductData, setEditProductData] = useState<any>(null);
+    const [deleteProductData, setDeleteProductData] = useState<Product | null>(null);
 
 
 
@@ -139,6 +169,7 @@ export default function DashboardPage() {
                 const employeesData = await api.getAllEmployees(token);
                 const serviceData = await api.getAllServices(token);
                 const attendanceData = await api.getAttendances(token);
+                const productsData = await api.getAllProducts(token);
 
                 setAttendances(attendanceData);
                 console.log(attendanceData)
@@ -147,6 +178,7 @@ export default function DashboardPage() {
                 setAppointments(appointmentsData);
                 setCustomers(customersData);
                 setSummaryData(summaryData);
+                setProducts(productsData);
             } catch (error) {
                 console.error("Failed to fetch dashboard data:", error);
             } finally {
@@ -168,6 +200,14 @@ export default function DashboardPage() {
     const handleServiceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setCurrentService(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleProductChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setCurrentProduct(prev => ({
             ...prev,
             [name]: value
         }));
@@ -291,6 +331,31 @@ export default function DashboardPage() {
             setServices(servicesData);
         } catch (error) {
             console.error("Failed to add Service:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        try {
+            setIsLoading(true);
+            await api.createProduct(currentProduct, token);
+            setCurrentProduct({
+                productId: 0,
+                productType: '',
+                name: '',
+                description: '',
+                brand: '',
+                price: 0,
+                stockQuantity: 0,
+                active: true
+            });
+            setShowNewProductForm(false);
+            const productsData = await api.getAllProducts(token);
+            setProducts(productsData);
+        } catch (error) {
+            console.error("Failed to add Product:", error);
         } finally {
             setIsLoading(false);
         }
@@ -422,6 +487,48 @@ export default function DashboardPage() {
         }
     };
 
+    const handleDeleteProduct = (product: Product) => {
+        setDeleteProductData(product);
+        setShowProductDeleteConfirm(true);
+    };
+
+    const handleEditProduct = (product: Product) => {
+        setEditProductData(product);
+        setShowEditProductForm(true);
+    };
+
+    const handleProductDeleteConfirm = async () => {
+        if (!deleteProductData) return;
+        try {
+            setIsLoading(true);
+            await api.deleteProduct(deleteProductData.productId, token);
+            setShowProductDeleteConfirm(false);
+            setDeleteProductData(null);
+            const productsData = await api.getAllProducts(token);
+            setProducts(productsData);
+        } catch (error) {
+            console.error("Failed to delete Product:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleProductEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        try {
+            setIsLoading(true);
+            await api.updateProduct(editProductData.productId, editProductData, token);
+            setShowEditProductForm(false);
+            setEditProductData(null);
+            const productsData = await api.getAllProducts(token);
+            setProducts(productsData);
+        } catch (error) {
+            console.error("Failed to update Product:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
             <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -490,6 +597,14 @@ export default function DashboardPage() {
                                         }}
                                     />
                                 )}
+                                {activeTab === 'products' && (
+                                    <ProductsTab
+                                        products={products}
+                                        setShowNewProductForm={setShowNewProductForm}
+                                        handleEditProduct={handleEditProduct}
+                                        handleDeleteProduct={handleDeleteProduct}
+                                    />
+                                )}
 
                             </>
                         )}
@@ -555,6 +670,15 @@ export default function DashboardPage() {
                         isLoading={isLoading}
                     />
 
+                    <DeleteConfirmationModal
+                        isOpen={showProductDeleteConfirm}
+                        onClose={() => setShowProductDeleteConfirm(false)}
+                        onConfirm={handleProductDeleteConfirm}
+                        title="Delete Product"
+                        message={`Are you sure you want to delete ${deleteProductData?.name}? This action cannot be undone.`}
+                        isLoading={isLoading}
+                    />
+
                     <ServiceFormModal
                         isOpen={showNewServiceForm}
                         onClose={() => setShowNewServiceForm(false)}
@@ -563,6 +687,7 @@ export default function DashboardPage() {
                         onSubmit={handleServiceSubmit}
                         isLoading={isLoading}
                     />
+
 
                     <ServiceFormModal
                         isOpen={showEditServiceForm}
@@ -576,6 +701,31 @@ export default function DashboardPage() {
                             }));
                         }}
                         onSubmit={handleServiceEditSubmit}
+                        isLoading={isLoading}
+                        isEditing={true}
+                    />
+
+                    <ProductFormModal
+                        isOpen={showNewProductForm}
+                        onClose={() => setShowNewProductForm(false)}
+                        product={currentProduct}
+                        onChange={handleProductChange}
+                        onSubmit={handleProductSubmit}
+                        isLoading={isLoading}
+                    />
+
+                    <ProductFormModal
+                        isOpen={showEditProductForm}
+                        onClose={() => setShowEditProductForm(false)}
+                        product={editProductData || {}}
+                        onChange={(e) => {
+                            const { name, value } = e.target;
+                            setEditProductData((prev: any) => ({
+                                ...prev,
+                                [name]: value
+                            }));
+                        }}
+                        onSubmit={handleProductEditSubmit}
                         isLoading={isLoading}
                         isEditing={true}
                     />

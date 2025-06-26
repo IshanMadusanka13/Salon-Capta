@@ -1,5 +1,17 @@
 import Image from 'next/image';
-import { Calendar, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  LayoutDashboard,
+  CalendarCheck,
+  Users,
+  UserCog,
+  Clock,
+  ReceiptText,
+  Scissors,
+  Package,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
+
 import { useState } from 'react';
 
 interface NavbarProps {
@@ -34,7 +46,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
             >
-              <Calendar className="mr-3 h-5 w-5" />
+              <LayoutDashboard className="mr-3 h-5 w-5" />
               Overview
             </button>
 
@@ -45,7 +57,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
             >
-              <Calendar className="mr-3 h-5 w-5" />
+              <CalendarCheck className="mr-3 h-5 w-5" />
               Appointments
             </button>
 
@@ -68,7 +80,7 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 }`}
             >
               <div className="flex items-center">
-                <Users className="mr-3 h-5 w-5" />
+                <UserCog className="mr-3 h-5 w-5" />
                 Employees
               </div>
               {isEmployeeMenuOpen ? (
@@ -119,8 +131,19 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
                 : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
             >
-              <Users className="mr-3 h-5 w-5" />
+              <Scissors className="mr-3 h-5 w-5" />
               Services
+            </button>
+
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`flex items-center px-4 py-3 text-sm font-medium rounded-md w-full ${activeTab === 'products'
+                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                }`}
+            >
+              <Package className="w-6 h-6" />
+              Products
             </button>
           </nav>
         </div>
