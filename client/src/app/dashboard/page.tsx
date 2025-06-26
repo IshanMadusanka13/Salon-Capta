@@ -6,20 +6,25 @@ import EmployeeFormModal from '@/components/dashboardComponents/employeeFormModa
 import EmployeeViewModal from '@/components/dashboardComponents/employeeViewModal';
 import AttendanceModal from '@/components/dashboardComponents/markAttendanceModal';
 import ServiceFormModal from '@/components/dashboardComponents/serviceFormModal';
+import ProductFormModal from '@/components/dashboardComponents/ProductFormModal';
 import AppointmentsTab from '@/components/dashboardTabs/AppointmentsTab';
 import AttendanceTab from '@/components/dashboardTabs/AttendanceTab';
 import CustomersTab from '@/components/dashboardTabs/CustomersTab';
 import EmployeesTab from '@/components/dashboardTabs/EmployeesTab';
 import OverviewTab from '@/components/dashboardTabs/OverviewTab';
 import ServicesTab from '@/components/dashboardTabs/ServicesTab';
+import ProductsTab from '@/components/dashboardTabs/ProductTab';
+import SalaryReportTab from '@/components/dashboardTabs/SalaryReportTab';
 import { endOfDay, format } from 'date-fns';
-import { act, useEffect, useState } from 'react';
-import 'react-datepicker/dist/react-datepicker.css';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { api } from '../../utils/apicall';
-import SalaryReportTab from '@/components/dashboardTabs/SalaryReportTab';
-import ProductsTab from '@/components/dashboardTabs/ProductTab';
-import ProductFormModal from '@/components/dashboardComponents/ProductFormModal';
+
+// Common Interfaces
+interface BaseEntity {
+    id: string;
+    name: string;
+}
 
 interface Appointment {
     appointmentId: string;
@@ -31,20 +36,28 @@ interface Appointment {
     time: string;
 }
 
-interface Customer {
+interface Customer extends BaseEntity {
     userId: string;
-    name: string;
     email: string;
     mobile: string;
     totalVisits: number;
 }
 
-interface Service {
+interface Service extends BaseEntity {
     serviceId: string;
     serviceType: string;
-    name: string;
     description: string;
     price: number;
+}
+
+interface Product extends BaseEntity {
+    productId: string;
+    productType: string;
+    description: string;
+    brand: string;
+    price: number;
+    stockQuantity: number;
+    active: boolean;
 }
 
 interface SummaryData {
@@ -57,122 +70,140 @@ interface SummaryData {
 interface Attendance {
     attendanceId: string;
     employeeId: string;
-    employee: { name: string };
+    employee: BaseEntity;
     date: string;
     attendanceStatus: 'PRESENT' | 'ABSENT' | 'LEAVE';
     arrival?: string;
     departure?: string;
 }
 
-interface Product {
-    productId: string;
-    productType: string;
+interface EmployeeFormState {
     name: string;
-    description: string;
-    brand: string;
-    price: number;
-    stockQuantity: number;
-    active: boolean;
+    dob: string;
+    gender: string;
+    address: string;
+    nic: string;
+    email: string;
+    phone: string;
+    role: string;
+    baseSalary: string;
+    joinDate: Date;
 }
 
+// Initial States
+const INITIAL_EMPLOYEE_STATE: EmployeeFormState = {
+    name: '',
+    dob: '',
+    gender: '',
+    address: '',
+    nic: '',
+    email: '',
+    phone: '',
+    role: '',
+    baseSalary: '',
+    joinDate: new Date(),
+};
+
+const INITIAL_SERVICE_STATE = {
+    serviceId: 0,
+    serviceType: '',
+    name: '',
+    description: '',
+    price: 0
+};
+
+const INITIAL_PRODUCT_STATE = {
+    productId: 0,
+    productType: '',
+    name: '',
+    description: '',
+    brand: '',
+    price: 0,
+    stockQuantity: 0,
+    active: true
+};
+
+const INITIAL_ATTENDANCE_FORM = {
+    selectedEmployee: '',
+    attendanceDate: new Date(),
+    attendanceStatus: 'PRESENT' as const,
+    checkInTime: '',
+    checkOutTime: ''
+};
+
 export default function DashboardPage() {
+    // State Management
     const [activeTab, setActiveTab] = useState('overview');
+    const [isLoading, setIsLoading] = useState(true);
+    const { token } = useSelector((state: any) => state.auth || {});
+
+    // Data States
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [services, setServices] = useState<any[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [attendances, setAttendances] = useState<Attendance[]>([]);
     const [summaryData, setSummaryData] = useState<SummaryData>({
         todayAppointments: 0,
         todayRevenue: 0,
         totalCustomers: 0,
         monthlyRevenue: 0
     });
-    const [isLoading, setIsLoading] = useState(true);
-    const state = useSelector((state: any) => state);
-    const { user, token } = state.auth || {};
-    const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
-    const [startDate, endDate] = dateRange;
-    const [employees, setEmployees] = useState([]);
-    const [showEmployeeForm, setShowEmployeeForm] = useState(false);
-    const [viewEmployeeData, setViewEmployeeData] = useState<any>(null);
-    const [editEmployeeData, setEditEmployeeData] = useState<any>(null);
-    const [deleteEmployeeData, setDeleteEmployeeData] = useState<any>(null);
-    const [deleteServiceData, setDeleteServiceData] = useState<any>(null);
-    const [showViewModal, setShowViewModal] = useState(false);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [showEmployeeDeleteConfirm, setShowEmployeeDeleteConfirm] = useState(false);
-    const [showServiceDeleteConfirm, setShowServiceDeleteConfirm] = useState(false);
-    const [showProductDeleteConfirm, setShowProductDeleteConfirm] = useState(false);
-    const [showAttendanceForm, setShowAttendanceForm] = useState(false);
-    const [services, setServices] = useState([]);
-    const [showNewServiceForm, setShowNewServiceForm] = useState(false);
-    const [showEditServiceForm, setShowEditServiceForm] = useState(false);
-    const [showEditProductForm, setShowEditProductForm] = useState(false);
-    const [editServiceData, setEditServiceData] = useState<any>(null);
-    const [newEmployee, setNewEmployee] = useState({
-        name: '',
-        dob: '',
-        gender: '',
-        address: '',
-        nic: '',
-        email: '',
-        phone: '',
-        role: '',
-        baseSalary: '',
-        joinDate: new Date(),
-    });
-    const [currentService, setCurrentService] = useState({
-        serviceId: 0,
-        serviceType: '',
-        name: '',
-        description: '',
-        price: 0
-    });
-    const [currentProduct, setCurrentProduct] = useState({
-        productId: 0,
-        productType: '',
-        name: '',
-        description: '',
-        brand: '',
-        price: 0,
-        stockQuantity: 0,
-        active: true
-    });
 
-    const [attendances, setAttendances] = useState<Attendance[]>([]);
+    // Filter States
+    const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
     const [attendanceFilters, setAttendanceFilters] = useState({
         selectedEmployee: '',
         startDate: null as Date | null,
         endDate: null as Date | null
     });
-    const [attendanceFormData, setAttendanceFormData] = useState({
-        selectedEmployee: '',
-        attendanceDate: new Date(),
-        attendanceStatus: 'PRESENT' as 'PRESENT' | 'ABSENT' | 'LEAVE',
-        checkInTime: '',
-        checkOutTime: ''
+
+    // Modal States
+    const [modalState, setModalState] = useState({
+        employee: { open: false, mode: 'add' as 'add' | 'edit' | 'view', data: null as any },
+        service: { open: false, mode: 'add' as 'add' | 'edit', data: null as any },
+        product: { open: false, mode: 'add' as 'add' | 'edit', data: null as any },
+        attendance: { open: false },
+        delete: {
+            open: false,
+            type: '' as 'employee' | 'service' | 'product',
+            data: null as any
+        }
     });
-    const [attendanceDateRange, setAttendanceDateRange] = useState<[Date | null, Date | null]>([null, null]);
-    const [attendanceStartDate, attendanceEndDate] = attendanceDateRange;
-    const [products, setProducts] = useState<Product[]>([]);
-    const [showNewProductForm, setShowNewProductForm] = useState(false);
-    const [editProductData, setEditProductData] = useState<any>(null);
-    const [deleteProductData, setDeleteProductData] = useState<Product | null>(null);
 
+    // Form States
+    const [formState, setFormState] = useState({
+        employee: INITIAL_EMPLOYEE_STATE,
+        service: INITIAL_SERVICE_STATE,
+        product: INITIAL_PRODUCT_STATE,
+        attendance: INITIAL_ATTENDANCE_FORM
+    });
 
-
+    // Data Fetching
     useEffect(() => {
         const fetchDashboardData = async () => {
             setIsLoading(true);
             try {
-                const appointmentsData = await api.getRecentAppointments(token);
-                const customersData = await api.getAllCustomers(token);
-                const summaryData = await api.getDashboardSummary(token);
-                const employeesData = await api.getAllEmployees(token);
-                const serviceData = await api.getAllServices(token);
-                const attendanceData = await api.getAttendances(token);
-                const productsData = await api.getAllProducts(token);
+                const [
+                    appointmentsData,
+                    customersData,
+                    summaryData,
+                    employeesData,
+                    serviceData,
+                    attendanceData,
+                    productsData
+                ] = await Promise.all([
+                    api.getRecentAppointments(token),
+                    api.getAllCustomers(token),
+                    api.getDashboardSummary(token),
+                    api.getAllEmployees(token),
+                    api.getAllServices(token),
+                    api.getAttendances(token),
+                    api.getAllProducts(token)
+                ]);
 
                 setAttendances(attendanceData);
-                console.log(attendanceData)
                 setEmployees(employeesData);
                 setServices(serviceData);
                 setAppointments(appointmentsData);
@@ -187,66 +218,13 @@ export default function DashboardPage() {
         };
 
         fetchDashboardData();
-    }, []);
+    }, [token]);
 
-    const handleEmployeeChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setNewEmployee(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleServiceChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setCurrentService(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleProductChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setCurrentProduct(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleAttendanceFormChange = (field: keyof typeof attendanceFormData, value: any) => {
-        setAttendanceFormData(prev => ({
-            ...prev,
-            [field]: value
-        }));
-    };
-
-    const handleViewEmployee = (employee: any) => {
-        setViewEmployeeData(employee);
-        setShowViewModal(true);
-    };
-
-    const handleEditEmployee = (employee: any) => {
-        setEditEmployeeData({ ...employee });
-        setShowEditModal(true);
-    };
-
-    const handleDeleteEmployee = (employee: any) => {
-        setDeleteEmployeeData(employee);
-        setShowEmployeeDeleteConfirm(true);
-    };
-
-    const handleEditService = (service: any) => {
-        setEditServiceData(service);
-        setShowEditServiceForm(true);
-    };
-
-    const handleDeleteService = (service: any) => {
-        setDeleteServiceData(service);
-        setShowServiceDeleteConfirm(true);
-    };
-
+    // Appointment Filter Effect
     useEffect(() => {
         const fetchFilteredAppointments = async () => {
+            const [startDate, endDate] = dateRange;
+
             if (!startDate || !endDate) {
                 const appointmentsData = await api.getRecentAppointments(token);
                 setAppointments(appointmentsData);
@@ -257,7 +235,6 @@ export default function DashboardPage() {
             try {
                 const formattedStart = format(startDate, "yyyy-MM-dd'T'HH:mm:ss");
                 const formattedEnd = format(endOfDay(endDate), "yyyy-MM-dd'T'HH:mm:ss");
-
                 const response = await api.getAppointmentsByRange(token, formattedStart, formattedEnd);
                 setAppointments(response);
             } catch (err) {
@@ -268,28 +245,27 @@ export default function DashboardPage() {
         };
 
         fetchFilteredAppointments();
-    }, [startDate, endDate]);
+    }, [dateRange, token]);
 
+    // Attendance Filter Effect
     useEffect(() => {
         const fetchFilteredAttendances = async () => {
             setIsLoading(true);
             try {
+                const { selectedEmployee, startDate, endDate } = attendanceFilters;
                 let response;
-                console.log(attendanceFilters)
-                if ((attendanceFilters.startDate && attendanceFilters.endDate) && !attendanceFilters.selectedEmployee) {
-                    const formattedStart = format(attendanceFilters.startDate, "yyyy-MM-dd");
-                    const formattedEnd = format(endOfDay(attendanceFilters.endDate), "yyyy-MM-dd");
+
+                if (selectedEmployee && startDate && endDate) {
+                    const formattedStart = format(startDate, "yyyy-MM-dd");
+                    const formattedEnd = format(endOfDay(endDate), "yyyy-MM-dd");
+                    response = await api.getAttendancesFiltered(selectedEmployee, formattedStart, formattedEnd, token);
+                } else if (selectedEmployee) {
+                    response = await api.getAttendancesFiltered(selectedEmployee, '1900-01-01', '1900-01-01', token);
+                } else if (startDate && endDate) {
+                    const formattedStart = format(startDate, "yyyy-MM-dd");
+                    const formattedEnd = format(endOfDay(endDate), "yyyy-MM-dd");
                     response = await api.getAttendancesFiltered(0, formattedStart, formattedEnd, token);
-                }
-                else if (attendanceFilters.selectedEmployee && (!attendanceFilters.startDate || !attendanceFilters.endDate)) {
-                    response = await api.getAttendancesFiltered(attendanceFilters.selectedEmployee, '1900-01-01', '1900-01-01', token);
-                }
-                else if (attendanceFilters.selectedEmployee && attendanceFilters.startDate && attendanceFilters.endDate) {
-                    const formattedStart = format(attendanceFilters.startDate, "yyyy-MM-dd");
-                    const formattedEnd = format(endOfDay(attendanceFilters.endDate), "yyyy-MM-dd");
-                    response = await api.getAttendancesFiltered(attendanceFilters.selectedEmployee, formattedStart, formattedEnd, token);
-                }
-                else {
+                } else {
                     response = await api.getAttendances(token);
                 }
 
@@ -304,8 +280,217 @@ export default function DashboardPage() {
         };
 
         fetchFilteredAttendances();
-    }, [attendanceFilters.selectedEmployee, attendanceFilters.endDate, token]);
+    }, [attendanceFilters, token]);
 
+    // Generic Handlers
+    const handleFormChange = (formType: 'employee' | 'service' | 'product' | 'attendance', e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormState(prev => ({
+            ...prev,
+            [formType]: {
+                ...prev[formType],
+                [name]: value
+            }
+        }));
+    };
+
+    const openModal = (modalType: keyof typeof modalState, mode: any = null, data: any = null) => {
+        setModalState(prev => ({
+            ...prev,
+            [modalType]: {
+                open: true,
+                mode: mode || 'add',
+                data: data || null
+            }
+        }));
+
+        // Initialize form if opening for edit
+        if (data && modalType !== 'delete') {
+            setFormState(prev => ({
+                ...prev,
+                [modalType]: { ...data }
+            }));
+        }
+    };
+
+    const closeModal = (modalType: keyof typeof modalState) => {
+        setModalState(prev => ({
+            ...prev,
+            [modalType]: {
+                open: false,
+                mode: 'add',
+                data: null
+            }
+        }));
+
+        // Reset form state
+        if (modalType !== 'delete') {
+            setFormState(prev => ({
+                ...prev,
+                [modalType]: modalType === 'employee'
+                    ? INITIAL_EMPLOYEE_STATE
+                    : modalType === 'service'
+                        ? INITIAL_SERVICE_STATE
+                        : INITIAL_PRODUCT_STATE
+            }));
+        }
+    };
+
+    // Entity Handlers
+    const handleEntityAction = async (
+        actionType: 'create' | 'update' | 'delete',
+        entityType: 'employee' | 'service' | 'product',
+        data: any,
+        fetchFunction: () => Promise<any>
+    ) => {
+        setIsLoading(true);
+        try {
+            const apiMethods = {
+                employee: {
+                    create: api.addEmployees,
+                    update: api.updateEmployee,
+                    delete: api.deleteEmployee
+                },
+                service: {
+                    create: api.createService,
+                    update: api.updateService,
+                    delete: api.deleteService
+                },
+                product: {
+                    create: api.createProduct,
+                    update: api.updateProduct,
+                    delete: api.deleteProduct
+                }
+            } as const;
+
+            const method = apiMethods[entityType][actionType];
+
+            if (actionType === 'delete') {
+                await method(data.id, token);
+            } else {
+                await method(data, token);
+            }
+
+            const updatedData = await fetchFunction();
+            switch (entityType) {
+                case 'employee': setEmployees(updatedData); break;
+                case 'service': setServices(updatedData); break;
+                case 'product': setProducts(updatedData); break;
+            }
+
+            closeModal(entityType);
+            if (actionType === 'delete') closeModal('delete');
+        } catch (error) {
+            console.error(`Failed to ${actionType} ${entityType}:`, error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Employee Handlers
+    const handleEmployeeSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const { mode, data } = modalState.employee;
+        const action = mode === 'add' ? 'create' : 'update';
+        handleEntityAction(
+            action,
+            'employee',
+            formState.employee,
+            () => api.getAllEmployees(token)
+        );
+    };
+
+    // Service Handlers
+    const handleServiceSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const { mode, data } = modalState.service;
+        const action = mode === 'add' ? 'create' : 'update';
+        handleEntityAction(
+            action,
+            'service',
+            formState.service,
+            () => api.getAllServices(token)
+        );
+    };
+
+    // Product Handlers
+    const handleProductSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const { mode, data } = modalState.product;
+        const action = mode === 'add' ? 'create' : 'update';
+        handleEntityAction(
+            action,
+            'product',
+            formState.product,
+            () => api.getAllProducts(token)
+        );
+    };
+
+    // Attendance Handlers
+    const handleAttendanceSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            const { attendanceDate, attendanceStatus, checkInTime, checkOutTime, selectedEmployee } = formState.attendance;
+
+            const attendanceData = {
+                employee: { employeeId: selectedEmployee },
+                date: format(attendanceDate, 'yyyy-MM-dd'),
+                attendanceStatus,
+                arrival: attendanceStatus === 'PRESENT' && checkInTime
+                    ? `${format(attendanceDate, 'yyyy-MM-dd')}T${checkInTime}:00`
+                    : null,
+                departure: attendanceStatus === 'PRESENT' && checkOutTime
+                    ? `${format(attendanceDate, 'yyyy-MM-dd')}T${checkOutTime}:00`
+                    : null
+            };
+
+            await api.markAttendance(attendanceData, token);
+            const updatedAttendances = await api.getAttendances(token);
+            setAttendances(updatedAttendances);
+
+            setFormState(prev => ({
+                ...prev,
+                attendance: INITIAL_ATTENDANCE_FORM
+            }));
+            closeModal('attendance');
+        } catch (error) {
+            console.error("Failed to mark attendance:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Delete Handler
+    const handleDeleteConfirm = async () => {
+        const { type, data } = modalState.delete;
+        if (!data) return;
+
+        setIsLoading(true);
+        try {
+            switch (type) {
+                case 'employee':
+                    await api.deleteEmployee(data.employeeId, token);
+                    setEmployees(prev => prev.filter(e => e.employeeId !== data.employeeId));
+                    break;
+                case 'service':
+                    await api.deleteService(data.serviceId, token);
+                    setServices(prev => prev.filter(s => s.serviceId !== data.serviceId));
+                    break;
+                case 'product':
+                    await api.deleteProduct(data.productId, token);
+                    setProducts(prev => prev.filter(p => p.productId !== data.productId));
+                    break;
+            }
+            closeModal('delete');
+        } catch (error) {
+            console.error(`Failed to delete ${type}:`, error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Filter Handlers
     const resetAttendanceFilters = () => {
         setAttendanceFilters({
             selectedEmployee: '',
@@ -314,227 +499,11 @@ export default function DashboardPage() {
         });
     };
 
-    const handleServiceSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        try {
-            setIsLoading(true);
-            await api.createService(currentService, token);
-            setCurrentService({
-                serviceId: 0,
-                serviceType: '',
-                name: '',
-                description: '',
-                price: 0
-            });
-            setShowNewServiceForm(false);
-            const servicesData = await api.getAllServices(token);
-            setServices(servicesData);
-        } catch (error) {
-            console.error("Failed to add Service:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        try {
-            setIsLoading(true);
-            await api.createProduct(currentProduct, token);
-            setCurrentProduct({
-                productId: 0,
-                productType: '',
-                name: '',
-                description: '',
-                brand: '',
-                price: 0,
-                stockQuantity: 0,
-                active: true
-            });
-            setShowNewProductForm(false);
-            const productsData = await api.getAllProducts(token);
-            setProducts(productsData);
-        } catch (error) {
-            console.error("Failed to add Product:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleEmployeeSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        try {
-            setIsLoading(true);
-            await api.addEmployees(newEmployee, token);
-            setNewEmployee({
-                name: '',
-                dob: '',
-                gender: '',
-                address: '',
-                nic: '',
-                email: '',
-                phone: '',
-                role: '',
-                baseSalary: '',
-                joinDate: new Date(),
-            });
-            setShowEmployeeForm(false);
-            const employeesData = await api.getAllEmployees(token);
-            setEmployees(employeesData);
-        } catch (error) {
-            console.error("Failed to add employee:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        try {
-            setIsLoading(true);
-            await api.updateEmployee(editEmployeeData, token);
-            setShowEditModal(false);
-
-            const employeesData = await api.getAllEmployees(token);
-            setEmployees(employeesData);
-            setEditEmployeeData(null)
-            setShowEditServiceForm(false)
-        } catch (error) {
-            console.error("Failed to update employee:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleDeleteConfirm = async () => {
-        try {
-            setIsLoading(true);
-            await api.deleteEmployee(deleteEmployeeData.employeeId, token);
-            setShowEmployeeDeleteConfirm(false);
-
-            const employeesData = await api.getAllEmployees(token);
-            setEmployees(employeesData);
-        } catch (error) {
-            console.error("Failed to delete employee:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleServiceDeleteConfirm = async () => {
-        try {
-            setIsLoading(true);
-            await api.deleteService(deleteServiceData.serviceId, token);
-            setShowServiceDeleteConfirm(false);
-
-            const servicesData = await api.getAllServices(token);
-            setServices(servicesData);
-        } catch (error) {
-            console.error("Failed to delete Service:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleServiceEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        try {
-            setIsLoading(true);
-            await api.updateService(token, editServiceData.serviceId, editServiceData);
-            setShowEditServiceForm(false);
-
-            const servicesData = await api.getAllServices(token);
-            setServices(servicesData);
-        } catch (error) {
-            console.error("Failed to update Service:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleAttendanceSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            setIsLoading(true);
-            const attendanceData = {
-                employee: { employeeId: attendanceFormData.selectedEmployee },
-                date: format(attendanceFormData.attendanceDate, 'yyyy-MM-dd'),
-                attendanceStatus: attendanceFormData.attendanceStatus,
-                arrival: attendanceFormData.attendanceStatus === 'PRESENT' && attendanceFormData.checkInTime
-                    ? `${format(attendanceFormData.attendanceDate, 'yyyy-MM-dd')}T${attendanceFormData.checkInTime}:00`
-                    : null,
-                departure: attendanceFormData.attendanceStatus === 'PRESENT' && attendanceFormData.checkOutTime
-                    ? `${format(attendanceFormData.attendanceDate, 'yyyy-MM-dd')}T${attendanceFormData.checkOutTime}:00`
-                    : null
-            };
-
-            await api.markAttendance(attendanceData, token);
-
-            const updatedAttendances = await api.getAttendances(token);
-            setAttendances(updatedAttendances);
-
-            setAttendanceFormData({
-                selectedEmployee: '',
-                attendanceDate: new Date(),
-                attendanceStatus: 'PRESENT',
-                checkInTime: '',
-                checkOutTime: ''
-            });
-        } catch (error) {
-            console.error("Failed to mark attendance:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleDeleteProduct = (product: Product) => {
-        setDeleteProductData(product);
-        setShowProductDeleteConfirm(true);
-    };
-
-    const handleEditProduct = (product: Product) => {
-        setEditProductData(product);
-        setShowEditProductForm(true);
-    };
-
-    const handleProductDeleteConfirm = async () => {
-        if (!deleteProductData) return;
-        try {
-            setIsLoading(true);
-            await api.deleteProduct(deleteProductData.productId, token);
-            setShowProductDeleteConfirm(false);
-            setDeleteProductData(null);
-            const productsData = await api.getAllProducts(token);
-            setProducts(productsData);
-        } catch (error) {
-            console.error("Failed to delete Product:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleProductEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        try {
-            setIsLoading(true);
-            await api.updateProduct(editProductData.productId, editProductData, token);
-            setShowEditProductForm(false);
-            setEditProductData(null);
-            const productsData = await api.getAllProducts(token);
-            setProducts(productsData);
-        } catch (error) {
-            console.error("Failed to update Product:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
             <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <div className="flex flex-col flex-1 overflow-hidden mt-20">
-
                 <main className="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                         {isLoading ? (
@@ -543,36 +512,31 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <>
-
-                                {activeTab === 'overview' && (
-                                    <OverviewTab summaryData={summaryData} />
-                                )}
+                                {activeTab === 'overview' && <OverviewTab summaryData={summaryData} />}
                                 {activeTab === 'appointments' && (
                                     <AppointmentsTab
                                         appointments={appointments}
-                                        startDate={startDate}
-                                        endDate={endDate}
+                                        startDate={dateRange[0]}
+                                        endDate={dateRange[1]}
                                         setDateRange={setDateRange}
                                     />
                                 )}
                                 {activeTab === 'services' && (
                                     <ServicesTab
                                         services={services}
-                                        setShowNewServiceForm={setShowNewServiceForm}
-                                        handleEditService={handleEditService}
-                                        handleDeleteService={handleDeleteService}
+                                        setShowNewServiceForm={() => openModal('service')}
+                                        handleEditService={(service) => openModal('service', 'edit', service)}
+                                        handleDeleteService={(service) => openModal('delete', null, { type: 'service', data: service })}
                                     />
                                 )}
-                                {activeTab === 'customers' && (
-                                    <CustomersTab customers={customers} />
-                                )}
+                                {activeTab === 'customers' && <CustomersTab customers={customers} />}
                                 {activeTab === 'employees' && (
                                     <EmployeesTab
                                         employees={employees}
-                                        setShowEmployeeForm={setShowEmployeeForm}
-                                        handleViewEmployee={handleViewEmployee}
-                                        handleEditEmployee={handleEditEmployee}
-                                        handleDeleteEmployee={handleDeleteEmployee}
+                                        setShowEmployeeForm={() => openModal('employee')}
+                                        handleViewEmployee={(employee) => openModal('employee', 'view', employee)}
+                                        handleEditEmployee={(employee) => openModal('employee', 'edit', employee)}
+                                        handleDeleteEmployee={(employee) => openModal('delete', null, { type: 'employee', data: employee })}
                                     />
                                 )}
                                 {activeTab === 'attendance' && (
@@ -582,7 +546,7 @@ export default function DashboardPage() {
                                         attendanceFilters={attendanceFilters}
                                         setAttendanceFilters={setAttendanceFilters}
                                         resetAttendanceFilters={resetAttendanceFilters}
-                                        setShowAttendanceForm={setShowAttendanceForm}
+                                        setShowAttendanceForm={() => openModal('attendance')}
                                     />
                                 )}
                                 {activeTab === 'salary-report' && (
@@ -600,137 +564,76 @@ export default function DashboardPage() {
                                 {activeTab === 'products' && (
                                     <ProductsTab
                                         products={products}
-                                        setShowNewProductForm={setShowNewProductForm}
-                                        handleEditProduct={handleEditProduct}
-                                        handleDeleteProduct={handleDeleteProduct}
+                                        setShowNewProductForm={() => openModal('product')}
+                                        handleEditProduct={(product) => openModal('product', 'edit', product)}
+                                        handleDeleteProduct={(product) => openModal('delete', null, { type: 'product', data: product })}
                                     />
                                 )}
-
                             </>
                         )}
-
                     </div>
+
+                    {/* Modals */}
                     <EmployeeFormModal
-                        isOpen={showEmployeeForm}
-                        onClose={() => setShowEmployeeForm(false)}
-                        employee={newEmployee}
-                        onChange={handleEmployeeChange}
+                        isOpen={modalState.employee.open}
+                        onClose={() => closeModal('employee')}
+                        employee={formState.employee}
+                        onChange={(e) => handleFormChange('employee', e)}
                         onSubmit={handleEmployeeSubmit}
                         isLoading={isLoading}
-                    />
-
-                    <EmployeeFormModal
-                        isOpen={showEditModal}
-                        onClose={() => setShowEditModal(false)}
-                        employee={editEmployeeData || {}}
-                        onChange={(e) => {
-                            const { name, value } = e.target;
-                            setEditEmployeeData((prev: any) => ({
-                                ...prev,
-                                [name]: value
-                            }));
-                        }}
-                        onSubmit={handleEditSubmit}
-                        isLoading={isLoading}
-                        isEditing={true}
-                    />
-
-
-                    <AttendanceModal
-                        show={showAttendanceForm}
-                        onClose={() => setShowAttendanceForm(false)}
-                        onSubmit={handleAttendanceSubmit}
-                        employees={employees}
-                        formData={attendanceFormData}
-                        onFormChange={handleAttendanceFormChange}
-                    />
-
-
-                    <EmployeeViewModal
-                        isOpen={showViewModal}
-                        onClose={() => setShowViewModal(false)}
-                        employee={viewEmployeeData}
-                    />
-
-                    <DeleteConfirmationModal
-                        isOpen={showEmployeeDeleteConfirm}
-                        onClose={() => setShowEmployeeDeleteConfirm(false)}
-                        onConfirm={handleDeleteConfirm}
-                        title="Delete Employee"
-                        message={`Are you sure you want to delete ${deleteEmployeeData?.name}? This action cannot be undone.`}
-                        isLoading={isLoading}
-                    />
-
-                    <DeleteConfirmationModal
-                        isOpen={showServiceDeleteConfirm}
-                        onClose={() => setShowServiceDeleteConfirm(false)}
-                        onConfirm={handleServiceDeleteConfirm}
-                        title="Delete Service"
-                        message={`Are you sure you want to delete ${deleteServiceData?.name}? This action cannot be undone.`}
-                        isLoading={isLoading}
-                    />
-
-                    <DeleteConfirmationModal
-                        isOpen={showProductDeleteConfirm}
-                        onClose={() => setShowProductDeleteConfirm(false)}
-                        onConfirm={handleProductDeleteConfirm}
-                        title="Delete Product"
-                        message={`Are you sure you want to delete ${deleteProductData?.name}? This action cannot be undone.`}
-                        isLoading={isLoading}
+                        isEditing={modalState.employee.mode === 'edit'}
                     />
 
                     <ServiceFormModal
-                        isOpen={showNewServiceForm}
-                        onClose={() => setShowNewServiceForm(false)}
-                        service={currentService}
-                        onChange={handleServiceChange}
+                        isOpen={modalState.service.open}
+                        onClose={() => closeModal('service')}
+                        service={formState.service}
+                        onChange={(e) => handleFormChange('service', e)}
                         onSubmit={handleServiceSubmit}
                         isLoading={isLoading}
-                    />
-
-
-                    <ServiceFormModal
-                        isOpen={showEditServiceForm}
-                        onClose={() => setShowEditServiceForm(false)}
-                        service={editServiceData || {}}
-                        onChange={(e) => {
-                            const { name, value } = e.target;
-                            setEditServiceData((prev: any) => ({
-                                ...prev,
-                                [name]: value
-                            }));
-                        }}
-                        onSubmit={handleServiceEditSubmit}
-                        isLoading={isLoading}
-                        isEditing={true}
+                        isEditing={modalState.service.mode === 'edit'}
                     />
 
                     <ProductFormModal
-                        isOpen={showNewProductForm}
-                        onClose={() => setShowNewProductForm(false)}
-                        product={currentProduct}
-                        onChange={handleProductChange}
+                        isOpen={modalState.product.open}
+                        onClose={() => closeModal('product')}
+                        product={formState.product}
+                        onChange={(e) => handleFormChange('product', e)}
                         onSubmit={handleProductSubmit}
                         isLoading={isLoading}
+                        isEditing={modalState.product.mode === 'edit'}
                     />
 
-                    <ProductFormModal
-                        isOpen={showEditProductForm}
-                        onClose={() => setShowEditProductForm(false)}
-                        product={editProductData || {}}
-                        onChange={(e) => {
-                            const { name, value } = e.target;
-                            setEditProductData((prev: any) => ({
+                    <AttendanceModal
+                        show={modalState.attendance.open}
+                        onClose={() => closeModal('attendance')}
+                        onSubmit={handleAttendanceSubmit}
+                        employees={employees}
+                        formData={formState.attendance}
+                        onFormChange={(field, value) =>
+                            setFormState(prev => ({
                                 ...prev,
-                                [name]: value
-                            }));
-                        }}
-                        onSubmit={handleProductEditSubmit}
+                                attendance: { ...prev.attendance, [field]: value }
+                            }))
+                        }
+                    />
+
+                    <EmployeeViewModal
+                        isOpen={modalState.employee.mode === 'view' && modalState.employee.open}
+                        onClose={() => closeModal('employee')}
+                        employee={modalState.employee.data}
+                    />
+
+                    <DeleteConfirmationModal
+                        isOpen={modalState.delete.open}
+                        onClose={() => closeModal('delete')}
+                        onConfirm={handleDeleteConfirm}
+                        title={`Delete ${modalState.delete.type?.charAt(0).toUpperCase() + modalState.delete.type?.slice(1)}`}
+                        message={`Are you sure you want to delete ${modalState.delete.data?.name}? This action cannot be undone.`}
                         isLoading={isLoading}
-                        isEditing={true}
                     />
                 </main>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
