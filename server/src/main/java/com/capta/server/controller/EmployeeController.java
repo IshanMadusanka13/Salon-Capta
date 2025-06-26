@@ -2,11 +2,14 @@ package com.capta.server.controller;
 
 import com.capta.server.dto.DashboardStats;
 import com.capta.server.model.Employee;
+import com.capta.server.model.Salary;
 import com.capta.server.service.EmployeeService;
+import com.capta.server.service.SalaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -14,10 +17,12 @@ import java.util.List;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final SalaryService salaryService;
 
     @Autowired
-    public EmployeeController(EmployeeService employeeService) {
+    public EmployeeController(EmployeeService employeeService, SalaryService salaryService) {
         this.employeeService = employeeService;
+        this.salaryService = salaryService;
     }
 
     @PostMapping
@@ -51,5 +56,10 @@ public class EmployeeController {
     @GetMapping("/stats")
     public ResponseEntity<DashboardStats> getStats() {
         return ResponseEntity.ok(employeeService.getSalonStats());
+    }
+
+    @GetMapping("/salary")
+    public ResponseEntity<List<Salary>> generateSalaries(LocalDate date) {
+        return ResponseEntity.ok(salaryService.generateSalaries(date));
     }
 }

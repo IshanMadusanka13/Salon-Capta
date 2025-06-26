@@ -1,21 +1,23 @@
 "use client"
 
-import { useState, useEffect, JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { api } from '../../utils/apicall';
-import { Calendar, Clock, Users, DollarSign, Calendar as CalendarIcon, Plus, BarChart2, Settings, LogOut, Bell, Edit, Trash2, Scissors, CalendarCheck } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import OverviewCard from '@/components/dashboardComponents/overviewCard';
+import Navbar from '@/components/dashboardComponents/dashboardNavbar';
+import DeleteConfirmationModal from '@/components/dashboardComponents/deleteConfirmationModal';
 import EmployeeFormModal from '@/components/dashboardComponents/employeeFormModal';
 import EmployeeViewModal from '@/components/dashboardComponents/employeeViewModal';
-import DeleteConfirmationModal from '@/components/dashboardComponents/deleteConfirmationModal';
-import ServiceFormModal from '@/components/dashboardComponents/serviceFormModal';
-import { DashboardTable } from '@/components/dashboardComponents/dashboardTable';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { endOfDay, format, isSameDay, parseISO } from 'date-fns';
 import AttendanceModal from '@/components/dashboardComponents/markAttendanceModal';
+import ServiceFormModal from '@/components/dashboardComponents/serviceFormModal';
+import AppointmentsTab from '@/components/dashboardTabs/AppointmentsTab';
+import AttendanceTab from '@/components/dashboardTabs/AttendanceTab';
+import CustomersTab from '@/components/dashboardTabs/CustomersTab';
+import EmployeesTab from '@/components/dashboardTabs/EmployeesTab';
+import OverviewTab from '@/components/dashboardTabs/OverviewTab';
+import ServicesTab from '@/components/dashboardTabs/ServicesTab';
+import { endOfDay, format } from 'date-fns';
+import { useEffect, useState } from 'react';
+import 'react-datepicker/dist/react-datepicker.css';
+import { useSelector } from 'react-redux';
+import { api } from '../../utils/apicall';
+import SalaryReportTab from '@/components/dashboardTabs/SalaryReportTab';
 
 interface Appointment {
     appointmentId: string;
@@ -98,6 +100,8 @@ export default function DashboardPage() {
         nic: '',
         email: '',
         phone: '',
+        role: '',
+        baseSalary: '',
         joinDate: new Date(),
     });
     const [currentService, setCurrentService] = useState({
@@ -305,6 +309,8 @@ export default function DashboardPage() {
                 nic: '',
                 email: '',
                 phone: '',
+                role: '',
+                baseSalary: '',
                 joinDate: new Date(),
             });
             setShowEmployeeForm(false);
@@ -402,7 +408,6 @@ export default function DashboardPage() {
             const updatedAttendances = await api.getAttendances(token);
             setAttendances(updatedAttendances);
 
-            // Reset form data
             setAttendanceFormData({
                 selectedEmployee: '',
                 attendanceDate: new Date(),
@@ -419,84 +424,7 @@ export default function DashboardPage() {
 
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-            <div className="hidden md:flex md:w-64 md:flex-col mt-20">
-                <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-center flex-shrink-0 px-4">
-                        <Image
-                            src="/logo.png"
-                            alt="Salon Capta Logo"
-                            width={50}
-                            height={50}
-                            className="h-12 w-auto"
-                        />
-                        <span className="ml-2 text-xl font-bold text-gray-800 dark:text-white">Salon Capta</span>
-                    </div>
-                    <div className="mt-6 flex flex-col flex-1">
-                        <nav className="flex-1 px-2 pb-4 space-y-1 mt-5">
-                            <button
-                                onClick={() => setActiveTab('overview')}
-                                className={`flex items-center px-4 py-3 text-sm font-medium rounded-md w-full ${activeTab === 'overview'
-                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white'
-                                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <Calendar className="mr-3 h-5 w-5" />
-                                Overview
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('appointments')}
-                                className={`flex items-center px-4 py-3 text-sm font-medium rounded-md w-full ${activeTab === 'appointments'
-                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white'
-                                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <Calendar className="mr-3 h-5 w-5" />
-                                Appointments
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('customers')}
-                                className={`flex items-center px-4 py-3 text-sm font-medium rounded-md w-full ${activeTab === 'customers'
-                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white'
-                                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <Users className="mr-3 h-5 w-5" />
-                                Customers
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('employees')}
-                                className={`flex items-center px-4 py-3 text-sm font-medium rounded-md w-full ${activeTab === 'employees'
-                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white'
-                                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <Users className="mr-3 h-5 w-5" />
-                                Employees
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('attendance')}
-                                className={`flex items-center px-4 py-3 text-sm font-medium rounded-md w-full ${activeTab === 'attendance'
-                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white'
-                                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <Users className="mr-3 h-5 w-5" />
-                                Attendance
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('services')}
-                                className={`flex items-center px-4 py-3 text-sm font-medium rounded-md w-full ${activeTab === 'services'
-                                    ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white'
-                                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
-                                    }`}
-                            >
-                                <Users className="mr-3 h-5 w-5" />
-                                Services
-                            </button>
-                        </nav>
-                    </div>
-                </div>
-            </div>
+            <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
             <div className="flex flex-col flex-1 overflow-hidden mt-20">
 
@@ -508,548 +436,61 @@ export default function DashboardPage() {
                             </div>
                         ) : (
                             <>
+
                                 {activeTab === 'overview' && (
-                                    <>
-                                        <div>
-                                            <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Dashboard Overview</h1>
-                                            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                                Get a quick snapshot of your salon's performance. Track key metrics, monitor trends, and stay informed.
-                                            </p>
-
-                                            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                                                <OverviewCard
-                                                    icon={<Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />}
-                                                    iconBgColor='bg-indigo-100 dark:bg-indigo-900'
-                                                    title='Total Customers'
-                                                    value={summaryData.totalCustomers}
-                                                />
-
-                                                <OverviewCard
-                                                    icon={<CalendarIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />}
-                                                    iconBgColor='bg-blue-100 dark:bg-blue-900'
-                                                    title='Todays Appointments'
-                                                    value={summaryData.todayAppointments}
-                                                />
-
-                                                <OverviewCard
-                                                    icon={<DollarSign className="h-6 w-6 text-green-600 dark:text-green-400" />}
-                                                    iconBgColor='bg-green-100 dark:bg-green-900'
-                                                    title='Todays Revenue'
-                                                    value={summaryData.todayRevenue}
-                                                    prefix='LKR'
-                                                />
-
-                                                <OverviewCard
-                                                    icon={<Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />}
-                                                    iconBgColor='bg-yellow-100 dark:bg-yellow-900'
-                                                    title='Monthly Revenue'
-                                                    value={summaryData.monthlyRevenue}
-                                                    prefix='LKR'
-                                                />
-                                            </div>
-                                        </div>
-                                    </>
+                                    <OverviewTab summaryData={summaryData} />
                                 )}
-
                                 {activeTab === 'appointments' && (
-                                    <>
-                                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Recent Appointments</h1>
-                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                            Stay on top of your schedule. View upcoming appointments, manage bookings, and reduce no-shows with ease.
-                                        </p>
-                                        <div className="mt-6 flex items-center justify-between flex-wrap gap-4">
-                                            <div className="flex items-center space-x-2">
-                                                <label className="text-sm text-gray-700 dark:text-gray-300">Filter by Date Range:</label>
-                                                <DatePicker
-                                                    selectsRange
-                                                    startDate={startDate}
-                                                    endDate={endDate}
-                                                    onChange={(update) => setDateRange(update)}
-                                                    isClearable
-                                                    placeholderText="Select date range"
-                                                    className="border rounded px-3 py-1 dark:bg-gray-700 dark:text-white"
-                                                    dateFormat="yyyy-MM-dd"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
-                                            <div className="overflow-x-auto">
-                                                <DashboardTable
-                                                    columns={['Customer', 'Service', 'Date & Time', 'Price']}
-                                                    data={appointments}
-                                                    renderRow={(appointment) => (
-                                                        <tr key={appointment.appointmentId}>
-
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="flex items-center">
-                                                                    <div className="flex-shrink-0 h-12 w-12">
-                                                                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                                                                            <span className="text-white font-bold text-lg">
-                                                                                {appointment.user.name.split(' ').map((n) => n[0]).join('')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="ml-4">
-                                                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                                            {appointment.user.name}
-                                                                        </div>
-                                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                                            Appointment ID: {appointment.appointmentId}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-6 py-4">
-                                                                <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                                                                    <p className="truncate" title={appointment.service.name}>
-                                                                        {appointment.service.name}
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4">
-                                                                <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                                                                    <p className="truncate" title={appointment.timeSlot}>
-                                                                        {appointment.timeSlot.split('T')[0]} • {appointment.timeSlot.split('T')[1]}
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                                                                    LKR {appointment.service.price}
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                    noData={
-                                                        <div className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                            No Appointments Available.
-                                                        </div>
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-                                    </>
+                                    <AppointmentsTab
+                                        appointments={appointments}
+                                        startDate={startDate}
+                                        endDate={endDate}
+                                        setDateRange={setDateRange}
+                                    />
                                 )}
-
                                 {activeTab === 'services' && (
-                                    <div>
-                                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Services</h1>
-                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                            Manage all your salon's services below. You can add, edit, or remove offerings as needed.
-                                        </p>
-                                        <div className="mt-8 flex justify-between items-center">
-                                            <button
-                                                onClick={() => setShowNewServiceForm(true)}
-                                                className="ml-auto inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
-                                            >
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                Add Service
-                                            </button>
-                                        </div>
-
-                                        <div className="mt-6 bg-white dark:bg-gray-900 shadow-xl overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700">
-                                            <div className="overflow-x-auto">
-                                                <DashboardTable
-                                                    data={services}
-                                                    itemsPerPage={5}
-                                                    columns={['Service', 'Type', 'Description', 'Price', 'Actions']}
-                                                    renderRow={(service: any) => (
-                                                        <tr key={service.serviceId} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150">
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="flex items-center">
-                                                                    <div className="flex-shrink-0 h-12 w-12">
-                                                                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                                                                            <span className="text-white font-bold text-lg">
-                                                                                {service.name.charAt(0).toUpperCase()}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="ml-4">
-                                                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                                            {service.name}
-                                                                        </div>
-                                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                                            ID: {service.serviceId}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${service.serviceType === 'HAIRCUTS'
-                                                                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300'
-                                                                    : service.serviceType === 'COLORING'
-                                                                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300'
-                                                                        : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                                                    }`}>
-                                                                    {service.serviceType.replace('_', ' ')}
-                                                                </span>
-                                                            </td>
-
-                                                            <td className="px-6 py-4">
-                                                                <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                                                                    <p className="truncate" title={service.description}>
-                                                                        {service.description}
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                                                                    LKR {service.price?.toFixed(2)}
-                                                                </span>
-                                                            </td>
-
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                                <div className="flex space-x-3">
-                                                                    <button
-                                                                        onClick={() => handleEditService(service)}
-                                                                        className="inline-flex items-center px-3 py-2 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors duration-150"
-                                                                    >
-                                                                        <Edit className="h-3 w-3 mr-1" />
-                                                                        Edit
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteService(service)}
-                                                                        className="inline-flex items-center px-3 py-2 rounded-lg text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 transition-colors duration-150"
-                                                                    >
-                                                                        <Trash2 className="h-3 w-3 mr-1" />
-                                                                        Delete
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                    noData={
-                                                        <div className="flex flex-col items-center justify-center">
-                                                            <div className="h-24 w-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                                                                <Scissors className="h-8 w-8 text-gray-400" />
-                                                            </div>
-                                                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                                                                No services found
-                                                            </h3>
-                                                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                                                Get started by adding your first service.
-                                                            </p>
-                                                            <button
-                                                                onClick={() => setShowNewServiceForm(true)}
-                                                                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700"
-                                                            >
-                                                                <Plus className="mr-2 h-4 w-4" />
-                                                                Add Service
-                                                            </button>
-                                                        </div>
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <ServicesTab
+                                        services={services}
+                                        setShowNewServiceForm={setShowNewServiceForm}
+                                        handleEditService={handleEditService}
+                                        handleDeleteService={handleDeleteService}
+                                    />
                                 )}
-
                                 {activeTab === 'customers' && (
-                                    <div>
-                                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Customers</h1>
-                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                            Access your customer directory. Keep profiles up to date and track visit history to build lasting relationships.
-                                        </p>
-                                        <div className="mt-4 bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
-                                            <div className="overflow-x-auto">
-                                                <DashboardTable
-                                                    data={customers}
-                                                    itemsPerPage={5}
-                                                    columns={['Name', 'Email', 'Mobile']}
-                                                    renderRow={(customer: { userId: string; name: string; email: string; mobile: string }) => (
-                                                        <tr key={customer.userId} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150">
-
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="flex items-center">
-                                                                    <div className="flex-shrink-0 h-12 w-12">
-                                                                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                                                                            <span className="text-white font-bold text-lg">
-                                                                                {customer.name.split(' ').map((n) => n[0]).join('')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="ml-4">
-                                                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                                            {customer.name}
-                                                                        </div>
-                                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                                            ID: {customer.userId}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-6 py-4">
-                                                                <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                                                                    <p className="truncate" title={customer.email}>
-                                                                        {customer.email}
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-6 py-4">
-                                                                <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                                                                    <p className="truncate" title={customer.mobile}>
-                                                                        {customer.mobile}
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )} noData={
-                                                        <div className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                            No customers found. Try adjusting your search.
-                                                        </div>
-                                                    }
-                                                />
-
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <CustomersTab customers={customers} />
                                 )}
-
                                 {activeTab === 'employees' && (
-                                    <div>
-                                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Employees</h1>
-                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                            View and manage your salon staff. Add new team members, update roles, or remove inactive employees.
-                                        </p>
-                                        <div className="mt-8 flex justify-between items-center">
-                                            <button
-                                                onClick={() => setShowEmployeeForm(true)}
-                                                className="ml-auto inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
-                                            >
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                Add Employee
-                                            </button>
-                                        </div>
-
-                                        <div className="mt-4 bg-white dark:bg-gray-800 shadow overflow-hidden rounded-lg">
-                                            <div className="overflow-x-auto">
-                                                <DashboardTable
-                                                    data={employees}
-                                                    itemsPerPage={5}
-                                                    columns={['Name', 'Email', 'Mobile', 'Actions']}
-                                                    renderRow={(employee: { employeeId: string; name: string; email: string; phone: string }) => (
-                                                        <tr key={employee.employeeId} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150">
-
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="flex items-center">
-                                                                    <div className="flex-shrink-0 h-12 w-12">
-                                                                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                                                                            <span className="text-white font-bold text-lg">
-                                                                                {employee.name.split(' ').map((n: string) => n[0]).join('')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="ml-4">
-                                                                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                                            {employee.name}
-                                                                        </div>
-                                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                                            ID: {employee.employeeId}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-6 py-4">
-                                                                <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                                                                    <p className="truncate" title={employee.email}>
-                                                                        {employee.email}
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4">
-                                                                <div className="text-sm text-gray-700 dark:text-gray-300 max-w-xs">
-                                                                    <p className="truncate" title={employee.phone}>
-                                                                        {employee.phone}
-                                                                    </p>
-                                                                </div>
-                                                            </td>
-
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                                <div className="flex space-x-3">
-                                                                    <button
-                                                                        onClick={() => handleViewEmployee(employee)}
-                                                                        className="inline-flex items-center px-3 py-2 rounded-lg text-xs font-semibold bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 transition-colors duration-150"
-                                                                    >
-                                                                        <Edit className="h-3 w-3 mr-1" />
-                                                                        View
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleEditEmployee(employee)}
-                                                                        className="inline-flex items-center px-3 py-2 rounded-lg text-xs font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 transition-colors duration-150"
-                                                                    >
-                                                                        <Edit className="h-3 w-3 mr-1" />
-                                                                        Edit
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => handleDeleteEmployee(employee)}
-                                                                        className="inline-flex items-center px-3 py-2 rounded-lg text-xs font-semibold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 transition-colors duration-150"
-                                                                    >
-                                                                        <Trash2 className="h-3 w-3 mr-1" />
-                                                                        Delete
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    )} noData={
-                                                        <div className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                            No employees found. Add your first employee.
-                                                        </div>
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <EmployeesTab
+                                        employees={employees}
+                                        setShowEmployeeForm={setShowEmployeeForm}
+                                        handleViewEmployee={handleViewEmployee}
+                                        handleEditEmployee={handleEditEmployee}
+                                        handleDeleteEmployee={handleDeleteEmployee}
+                                    />
                                 )}
-
                                 {activeTab === 'attendance' && (
-                                    <div>
-                                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Employee Attendance</h1>
-                                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                            Record and review staff attendance. Track presence, absences, and working hours for better management.
-                                        </p>
-
-                                        <div className="mt-6 flex items-center justify-between flex-wrap gap-4">
-                                            <div className="flex items-center space-x-4">
-                                                {/* Employee Filter */}
-                                                <div className="flex items-center space-x-2">
-                                                    <label className="text-sm text-gray-700 dark:text-gray-300">Employee:</label>
-                                                    <select
-                                                        value={attendanceFilters.selectedEmployee}
-                                                        onChange={(e) => setAttendanceFilters(prev => ({ ...prev, selectedEmployee: e.target.value }))}
-                                                        className="border rounded px-3 py-1 dark:bg-gray-700 dark:text-white min-w-[150px]"
-                                                    >
-                                                        <option value="">All Employees</option>
-                                                        {employees.map((employee: any) => (
-                                                            <option key={employee.employeeId} value={employee.employeeId}>
-                                                                {employee.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-
-                                                {/* Date Range Filter */}
-                                                <div className="flex items-center space-x-2">
-                                                    <label className="text-sm text-gray-700 dark:text-gray-300">Date Range:</label>
-                                                    <DatePicker
-                                                        selectsRange
-                                                        startDate={attendanceFilters.startDate}
-                                                        endDate={attendanceFilters.endDate}
-                                                        onChange={(dates) => {
-                                                            const [start, end] = dates;
-                                                            setAttendanceFilters(prev => ({
-                                                                ...prev,
-                                                                startDate: start,
-                                                                endDate: end
-                                                            }));
-                                                        }}
-                                                        isClearable
-                                                        placeholderText="Select date range"
-                                                        className="border rounded px-3 py-1 dark:bg-gray-700 dark:text-white"
-                                                        dateFormat="yyyy-MM-dd"
-                                                    />
-                                                </div>
-
-                                                {/* Clear Filters Button */}
-                                                {(attendanceFilters.selectedEmployee || attendanceFilters.startDate || attendanceFilters.endDate) && (
-                                                    <button
-                                                        onClick={resetAttendanceFilters}
-                                                        className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                                                    >
-                                                        Clear Filters
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <button
-                                                onClick={() => setShowAttendanceForm(true)}
-                                                className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
-                                            >
-                                                <Plus className="mr-2 h-4 w-4" />
-                                                Mark Attendance
-                                            </button>
-                                        </div>
-
-                                        <div className="mt-6 bg-white dark:bg-gray-900 shadow-xl overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700">
-                                            <div className="overflow-x-auto">
-                                                <DashboardTable
-                                                    data={attendances}
-                                                    itemsPerPage={10}
-                                                    columns={['Employee', 'Date', 'Status', 'Check-in', 'Check-out']}
-                                                    renderRow={(attendance) => (
-                                                        <tr key={attendance.attendanceId} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150">
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                                                                    {attendance.employee.name}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                                                {attendance.arrival ? format(parseISO(attendance.arrival), 'MMM dd, yyyy') :
-                                                                    attendance.date ? format(parseISO(attendance.date), 'MMM dd, yyyy') : '-'}
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${attendance.attendanceStatus === 'PRESENT'
-                                                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                                                    : attendance.attendanceStatus === 'ABSENT'
-                                                                        ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                                                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                                                    }`}>
-                                                                    {attendance.attendanceStatus}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                                                {attendance.arrival ? format(parseISO(attendance.arrival), 'HH:mm') : '-'}
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                                                                {attendance.departure ? format(parseISO(attendance.departure), 'HH:mm') : '-'}
-                                                            </td>
-                                                        </tr>
-                                                    )}
-                                                    noData={
-                                                        <div className="flex flex-col items-center justify-center py-12">
-                                                            <div className="h-24 w-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                                                                <CalendarCheck className="h-8 w-8 text-gray-400" />
-                                                            </div>
-                                                            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                                                                No attendance records found
-                                                            </h3>
-                                                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                                                {attendanceFilters.selectedEmployee || attendanceFilters.startDate || attendanceFilters.endDate
-                                                                    ? "No records match your current filters. Try adjusting the filter criteria."
-                                                                    : "Begin tracking attendance by marking your first entry."
-                                                                }
-                                                            </p>
-                                                            <div className="flex gap-2">
-                                                                {(attendanceFilters.selectedEmployee || attendanceFilters.startDate || attendanceFilters.endDate) && (
-                                                                    <button
-                                                                        onClick={resetAttendanceFilters}
-                                                                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                                                                    >
-                                                                        Clear Filters
-                                                                    </button>
-                                                                )}
-                                                                <button
-                                                                    onClick={() => setShowAttendanceForm(true)}
-                                                                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700"
-                                                                >
-                                                                    <Plus className="mr-2 h-4 w-4" />
-                                                                    Mark Attendance
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    }
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <AttendanceTab
+                                        attendances={attendances}
+                                        employees={employees}
+                                        attendanceFilters={attendanceFilters}
+                                        setAttendanceFilters={setAttendanceFilters}
+                                        resetAttendanceFilters={resetAttendanceFilters}
+                                        setShowAttendanceForm={setShowAttendanceForm}
+                                    />
                                 )}
+                                {activeTab === 'salary-report' && (
+                                    <SalaryReportTab
+                                        employees={employees}
+                                        onGenerateReport={async (month) => {
+                                            const response = await api.generateSalaryReport(
+                                                format(month, 'yyyy-MM'),
+                                                token
+                                            );
+                                            return response;
+                                        }}
+                                    />
+                                )}
+
                             </>
                         )}
 

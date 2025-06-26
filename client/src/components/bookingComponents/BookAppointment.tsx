@@ -17,6 +17,7 @@ interface Service {
 interface Stylist {
   employeeId: number;
   name: string;
+  role: string;
 }
 
 interface BookingSummary {
@@ -424,7 +425,7 @@ export default function BookAppointment() {
                                       {stylist.name}
                                     </span>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                                      Professional Stylist
+                                      {stylist.role}
                                     </p>
                                   </div>
                                 </div>

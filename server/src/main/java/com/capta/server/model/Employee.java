@@ -27,5 +27,9 @@ public class Employee {
 
     private String email;
 
+    private String role;
+
+    private double baseSalary;
+
     private LocalDate joinDate;
 }

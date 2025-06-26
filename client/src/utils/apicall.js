@@ -186,8 +186,13 @@ export const api = {
             method: 'GET',
         }),
 
-    getAttendancesFiltered: (user,startDate, endDate, token) =>
+    getAttendancesFiltered: (user, startDate, endDate, token) =>
         fetchApi(`/attendance/filter/${user}/${startDate}/${endDate}`, token, {
+            method: 'GET',
+        }),
+
+    generateSalaryReport: (month, token) =>
+        fetchApi(`/employee/salary/${month}`, token, {
             method: 'GET',
         }),
 
