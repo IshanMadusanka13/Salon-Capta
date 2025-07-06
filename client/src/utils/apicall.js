@@ -215,6 +215,15 @@ export const api = {
 
     getAttendancesFiltered: (user, startDate, endDate, token) =>
         fetchApi(`/attendance/filter/${user}/${startDate}/${endDate}`, token, { method: 'GET' }),
+
+    // ==============================
+    // POS APIs
+    // ==============================
+    createPosTransaction: (transaction, token) =>
+        fetchApi('/transactions', token, {
+            method: 'POST',
+            body: JSON.stringify(transaction)
+        }),
 };
 
 export default api;

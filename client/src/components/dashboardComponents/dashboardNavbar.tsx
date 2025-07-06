@@ -60,6 +60,17 @@ export default function Navbar({ activeTab, setActiveTab }: NavbarProps) {
               <CalendarCheck className="mr-3 h-5 w-5" />
               Appointments
             </button>
+            
+            <button
+              onClick={() => setActiveTab('pos')}
+              className={`flex items-center px-4 py-3 text-sm font-medium rounded-md w-full ${activeTab === 'pos'
+                ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-700 dark:text-white'
+                : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                }`}
+            >
+              <CalendarCheck className="mr-3 h-5 w-5" />
+              POS
+            </button>
 
             <button
               onClick={() => setActiveTab('customers')}

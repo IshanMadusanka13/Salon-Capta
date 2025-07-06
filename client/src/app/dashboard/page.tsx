@@ -19,6 +19,7 @@ import { endOfDay, format } from 'date-fns';
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { api } from '../../utils/apicall';
+import PosForm from '@/components/dashboardTabs/Pos';
 
 // Common Interfaces
 interface BaseEntity {
@@ -179,6 +180,9 @@ export default function DashboardPage() {
         product: INITIAL_PRODUCT_STATE,
         attendance: INITIAL_ATTENDANCE_FORM
     });
+
+    const [isCreatingPos, setIsCreatingPos] = useState(false);
+    const [posLoading, setPosLoading] = useState(false);
 
     // Data Fetching
     useEffect(() => {
@@ -461,6 +465,32 @@ export default function DashboardPage() {
         }
     };
 
+    const handleCreatePosTransaction = async (data: any) => {
+        setPosLoading(true);
+        try {
+            const payload = {
+                customer: data.customer,
+                employee: { employeeId: data.employeeId },
+                services: data.cart.filter((i: any) => i.type === "service").map((i: any) => ({ serviceId: i.id, price: i.price, quantity: i.quantity })),
+                products: data.cart.filter((i: any) => i.type === "product").map((i: any) => ({
+                    productId: i.id,
+                    quantity: i.quantity,
+                    price: i.price
+                })),
+                paymentMethod: data.paymentMethod,
+                totalAmount: data.totalAmount,
+                transactionTime: new Date().toISOString(),
+            };
+            console.log("Creating POS transaction with data:", data);
+            console.log("Creating POS transaction with payload:", payload);
+            await api.createPosTransaction(payload, token);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setPosLoading(false);
+        }
+    };
+
     // Delete Handler
     const handleDeleteConfirm = async () => {
         const { type, data } = modalState.delete;
@@ -569,6 +599,16 @@ export default function DashboardPage() {
                                         handleDeleteProduct={(product) => openModal('delete', null, { type: 'product', data: product })}
                                     />
                                 )}
+                                {activeTab === 'pos' && (
+                                    <PosForm
+                                        services={services}
+                                        products={products}
+                                        employees={employees}
+                                        onSubmit={handleCreatePosTransaction}
+                                        isLoading={posLoading}
+                                    />
+                                )}
+
                             </>
                         )}
                     </div>

@@ -1,5 +1,6 @@
 package com.capta.server.controller;
 
+import com.capta.server.dto.PosTransactionDto;
 import com.capta.server.model.PosTransaction;
 import com.capta.server.service.PosTransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,37 +13,27 @@ import java.util.List;
 @RequestMapping("/api/transactions")
 public class PosTransactionController {
 
-    private final PosTransactionService transactionService;
-
     @Autowired
-    public PosTransactionController(PosTransactionService transactionService) {
-        this.transactionService = transactionService;
-    }
+    private PosTransactionService posTransactionService;
 
     @PostMapping
-    public PosTransaction createTransaction(@RequestBody PosTransaction transaction) {
-        return transactionService.createTransaction(transaction);
-    }
-
-    @PutMapping("/{id}")
-    public PosTransaction updateTransaction(@PathVariable int id, @RequestBody PosTransaction transaction) {
-        transaction.setTransactionId(id);
-        return transactionService.updateTransaction(transaction);
+    public PosTransaction createTransaction(@RequestBody PosTransactionDto request) {
+        return posTransactionService.createTransaction(request);
     }
 
     @GetMapping
     public List<PosTransaction> getAllTransactions() {
-        return transactionService.getAllTransactions();
+        return posTransactionService.getAllTransactions();
     }
 
     @GetMapping("/{id}")
     public PosTransaction getTransactionById(@PathVariable int id) {
-        return transactionService.getTransactionById(id);
+        return posTransactionService.getTransactionById(id);
     }
 
     @DeleteMapping("/{id}")
     public void deleteTransaction(@PathVariable int id) {
-        transactionService.deleteTransaction(id);
+        posTransactionService.deleteTransaction(id);
     }
 
     @GetMapping("/range")
@@ -51,6 +42,6 @@ public class PosTransactionController {
             @RequestParam("end") String end) {
         LocalDateTime startDate = LocalDateTime.parse(start);
         LocalDateTime endDate = LocalDateTime.parse(end);
-        return transactionService.getTransactionsByDateRange(startDate, endDate);
+        return posTransactionService.getTransactionsByDateRange(startDate, endDate);
     }
 }

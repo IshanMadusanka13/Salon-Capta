@@ -2,6 +2,7 @@ package com.capta.server.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,11 +20,8 @@ public class PosTransaction {
     @JoinColumn(name = "appointment_id", nullable = true)
     private Appointment appointment;
 
-    @OneToMany(mappedBy = "serviceId", cascade = CascadeType.ALL)
-    private List<Services> services = new ArrayList<>();
-
-    @OneToMany(mappedBy = "productId", cascade = CascadeType.ALL)
-    private List<Product> products = new ArrayList<>();
+    @OneToMany(mappedBy = "id", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PosTransactionItem> items = new ArrayList<>();
 
     private String customer;
 
@@ -36,5 +34,4 @@ public class PosTransaction {
     private double totalAmount;
 
     private String paymentMethod;
-
 }
