@@ -1,72 +1,37 @@
-# Salon Capta – Salon Management & POS System
+# Salon Capta
 
-A modern, full-stack salon management system with online booking, appointment scheduling, employee management, inventory, and integrated Point of Sale (POS) features. Built for Sri Lankan salons, with a focus on usability, extensibility, and a beautiful dashboard experience.
+A modern, full-stack salon management system for appointment booking, POS transactions, employee management, and more.
 
----
+![Salon Capta Homepage](client/public/capta.png)
 
 ## Features
 
-- **Online Booking & Appointments**
-  - Customer self-booking
-  - Appointment calendar and timeline views
-  - Date range and quick filters (Yesterday, Today, Tomorrow)
-- **Employee Management**
-  - Add/edit/view employees
-  - Attendance tracking and salary reports
-- **Customer Management**
-  - Customer directory and visit history
-- **Service Management**
-  - Manage salon services and pricing
-- **Product Inventory**
-  - Add/edit products with types, brands, stock, and status
-  - Inventory tracking and stock updates
-- **POS (Point of Sale)**
-  - Create transactions with services/products, quantities, and payment methods
-  - Cash/card support with real-time change calculation
-  - Automatic stock deduction
-- **Dashboard**
-  - Overview of key metrics (appointments, revenue, customers)
-  - Modern, responsive UI with dark mode support
-
----
+- **Online Appointment Booking**: Schedule, view, and manage customer appointments.
+- **POS System**: Create transactions with services and products, handle payments (cash/card), and manage inventory.
+- **Employee Management**: Add, edit, and track employees, attendance, and salary reports.
+- **Customer Management**: View and manage customer profiles and visit history.
+- **Service & Product Catalog**: Manage salon services and retail products with categories and stock tracking.
+- **Dashboard Overview**: Visual summary of appointments, revenue, and key business metrics.
 
 ## Tech Stack
 
-| Layer         | Technology                        |
-|---------------|-----------------------------------|
-| Frontend      | Next.js, TypeScript, Tailwind CSS |
-| Backend       | Spring Boot                       |
-| Database      | PostgreSQL                        |
-| API           | RESTful JSON                      |
-| Auth          | JWT                               |
-
----
+- **Frontend**: Next.Js, TypeScript, TailwindCSS
+- **Backend**: Spring Boot
+- **Database**: PostgreSQL
+- **API**: RESTful endpoints
 
 ## Getting Started
 
-### Prerequisites
-
-- Node.js (v18+)
-- Java 17+
-- Maven
-- PostgreSQL
-
-### Backend Setup
-
 1. **Clone the repository**
-2. **Configure Database**
-- Update `application.properties` with your DB credentials.
+2. **Install dependencies** for both client and server:
+   - `cd client && npm install`
+   - `cd ../server && mvn install`
+3. **Configure environment variables** (DB connection, etc.)
+4. **Run the backend**: `cd server && mvn spring-boot:run`
+5. **Run the frontend**: `cd client && npm run dev`
+6. Access the app at `http://localhost:3000`
 
-3. **Run the Backend**
+## Folder Structure
 
-
-### Frontend Setup
-
-1. **Navigate to frontend**
-
-3. **Install dependencies**
-
-4. **Run the Frontend**
-
-5. **Access the App**
-- Open [http://localhost:3000](http://localhost:3000) in your browser.
+- `client/` — Next.Js frontend
+- `server/` — Spring Boot backend
